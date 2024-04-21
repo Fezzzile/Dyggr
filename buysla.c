@@ -3,7 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Microsoft wave
+/* I think trying to read every tag in the header was a mistake.
+ * I think I'm gonna read the first 16 bytes (the variants mainly differ in bytes 5-6
+ * If they match a WAV file
+ * Read further until I reach the "data" chunk
+ * then read the next four bytes to see how many bytes to write to file
+ */
+// Microsoft Wave
 struct waveheader_t {
 	// All values, save the name of the chunks, are in little-endian mode
 	char *waveChunk; // Beginning of the "fmt " subchunk
