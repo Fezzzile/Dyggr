@@ -28,7 +28,8 @@ int main(int argc, char *argv[]){
 			if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/){
 
 				if ((i + 1) == argc){
-					fprintf(stderr, "Enter a source (call Usage(..))\n");
+					fprintf(stderr, "Enter source from which to carve files.\n");
+					// Usage(..)
 					exit(EXIT_FAILURE);
 				}
 				source = argv[i + 1];
@@ -39,7 +40,8 @@ int main(int argc, char *argv[]){
 		FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
 		FILE *DeviceOrFile = fopen(source /*rgv[1]*/, "r");
 		if (DeviceOrFile == NULL){
-			fprintf(stderr, "Error opening file. Call Usage(..)\n");
+			fprintf(stderr, "Error opening %s.\n", source);
+			// Usage(..)
 			exit(EXIT_FAILURE);
 		}
 		
