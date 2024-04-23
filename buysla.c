@@ -3,11 +3,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-void Usage()
+void Usage(char* progName)
 {
-    fprintf(stdout, "\nRestore deleted files (currently WAVE only)\n\n");
-    fprintf(stdout, "Usage: buysla -s <source>\n");
-    fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna\n");
+    fprintf(stdout, "\nRestore deleted files (currently WAVE only).\n\n");
+    fprintf(stdout, "Usage: %s -s <source>\n\n", progName);
+    fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
+    fprintf(stdout, "%s is distributed with the Apache 2.0 license.\n\n", progName);
     exit(EXIT_FAILURE);
 }
 int main(int argc, char *argv[])
@@ -15,7 +16,7 @@ int main(int argc, char *argv[])
     int carve = 0;
     if (argc < 2)
     {
-        Usage();
+        Usage(argv[0]);
     }
 
     while (carve != EOF)
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
                 if ((i + 1) == argc)
                 {
                     fprintf(stderr, "Enter source from which to carve files.\n");
-                    Usage();
+                    Usage(argv[0]);
                 }
                 source = argv[i + 1];
                 break;
@@ -46,7 +47,7 @@ int main(int argc, char *argv[])
         if (strlen(source) == 0)
         {
             fprintf(stderr, "\nError: No source entered.\n");
-            Usage();
+            Usage(argv[0]);
         }
 
         FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
         if (DeviceOrFile == NULL)
         {
             fprintf(stderr, "\nError: Could not open %s.\n", source);
-            Usage();
+            Usage(argv[0]);
         }
 
         while(1)
