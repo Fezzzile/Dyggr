@@ -3,100 +3,123 @@
 #include <string.h>
 #include <stdlib.h>
 
-int main(int argc, char *argv[]){
-	int carve = 0;
-	if (argc < 2){
-		fprintf(stdout, "Buysla: Restore deleted files (currently WAVE only)\n\n");
-		fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna\n\n");
-		fprintf(stdout, "Usage: %s -s <source>\n", argv[0]);
-		exit(EXIT_FAILURE);
-	}
+void Usage()
+{
+    fprintf(stdout, "\nRestore deleted files (currently WAVE only)\n\n");
+    fprintf(stdout, "Usage: buysla -s <source>\n");
+    fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna\n");
+    exit(EXIT_FAILURE);
+}
+int main(int argc, char *argv[])
+{
+    int carve = 0;
+    if (argc < 2)
+    {
+        Usage();
+    }
 
-	while (carve != EOF){
-		char riff[12];
-		char tempriff[12];
-		char cmpriff[] = "RIFF";
-		char cmpwave[] = "WAVE";
-		char cmpdata[] = "data";
-		char data[4];
-		uint32_t rawSizeInBytes;
-		int numBytesBeforeDataChunk = 0;
+    while (carve != EOF)
+    {
+        char riff[12];
+        char tempriff[12];
+        char cmpriff[] = "RIFF";
+        char cmpwave[] = "WAVE";
+        char cmpdata[] = "data";
+        char data[4];
+        uint32_t rawSizeInBytes;
+        int numBytesBeforeDataChunk = 0;
+        char *source = "";
 
-		char *source;
-	
-		for (int i = 1; i < argc; i++){
-			if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/){
-				if ((i + 1) == argc){
-					fprintf(stderr, "Enter source from which to carve files.\n");
-					// Usage(..)
-					exit(EXIT_FAILURE);
-				}
-				source = argv[i + 1];
-				break;
-			}
-		}
+        for (int i = 1; i < argc; i++)
+        {
+            if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
+            {
+                if ((i + 1) == argc)
+                {
+                    fprintf(stderr, "Enter source from which to carve files.\n");
+                    Usage();
+                }
+                source = argv[i + 1];
+                break;
+            }
+        }
+        if (strlen(source) == 0)
+        {
+            fprintf(stderr, "\nError: No source entered.\n");
+            Usage();
+        }
 
-		FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
-		FILE *DeviceOrFile = fopen(source, "r");
-		if (DeviceOrFile == NULL){
-			fprintf(stderr, "Error opening %s.\n", source);
-			// Usage(..)
-			exit(EXIT_FAILURE);
-		}
-		
-		while(1){
-				carve = getc(DeviceOrFile);
-				if (carve == EOF){
-					fprintf(stdout, "End of %s reached.\n", source);
-					exit(0);
-				}
-				riff[11] = carve;
-				if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0){ /* WAVE header found. */
-					/* Write "RIFF....WAVE" first  */
-					for (int v = 0; v < 12; v++){
-						fprintf(restoredfile, "%c", riff[v]);
-					}
-					while(1){
-						carve = getc(DeviceOrFile);
-						if (carve == EOF){
-							fprintf(stdout, "End of %s reached.\n", source);
-							exit(0);
-						}
-						/* Keep writing bytes until the "data" chunk is reached */
-						putc(carve, restoredfile); 
-						data[3] = carve;
-						if (memcmp(data, cmpdata, 4) == 0){ /* "data" chunk found */
-							fread(&rawSizeInBytes, 1, 4, DeviceOrFile);
-							fprintf(stdout, "%d MiB WAVE file found.\n", (rawSizeInBytes/1024)/1024);
-							
-							/* Write raw data size
-							 * By shifting to the right because of little-endianness
-							 * Surely there is a libC function that does this more efficiently.
-							 */
-							fputc(rawSizeInBytes & 0x000000ff, restoredfile);
-							fputc((rawSizeInBytes & 0x0000ff00) >> 8, restoredfile);
-							fputc((rawSizeInBytes & 0x00ff0000) >> 16, restoredfile);
-							fputc((rawSizeInBytes & 0xff000000) >> 24, restoredfile);
+        FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
+        FILE *DeviceOrFile = fopen(source, "r");
+        if (DeviceOrFile == NULL)
+        {
+            fprintf(stderr, "\nError: Could not open %s.\n", source);
+            Usage();
+        }
 
-							for(int h = 0; h < rawSizeInBytes; h++){
-								putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
-							}
-							break; /* Break loop to avoid trailing bytes */
-						}
-						/* Search: shift array contents leftward
-						 * to avoid overriding, since bytes are written on the the last position.
-						 */
-						for (int m = 0; m < 3; m++){
-							data[m] = data[m + 1];
-						}
-					}
-				}
-				/* Shift array contents leftward */
-				for (int b = 0; b < 11; b++){
-					riff[b] = riff[b + 1];
-				}
-		}
+        while(1)
+        {
+            carve = getc(DeviceOrFile);
+            if (carve == EOF)
+            {
+                fprintf(stdout, "End of %s reached.\n", source);
+                exit(0);
+            }
+            riff[11] = carve;
+            if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */
+            {
+                /* Write "RIFF....WAVE" first  */
+                for (int v = 0; v < 12; v++)
+                {
+                    fprintf(restoredfile, "%c", riff[v]);
+                }
+                while(1)
+                {
+                    carve = getc(DeviceOrFile);
+                    if (carve == EOF)
+                    {
+                        fprintf(stdout, "End of %s reached.\n", source);
+                        exit(0);
+                    }
+                    /* Keep writing bytes until the "data" chunk is reached */
+                    putc(carve, restoredfile);
+                    data[3] = carve;
+                    if (memcmp(data, cmpdata, 4) == 0)  /* "data" chunk found */
+                    {
+                        fread(&rawSizeInBytes, 1, 4, DeviceOrFile);
+                        fprintf(stdout, "%d MiB WAVE file found.\n", (rawSizeInBytes/1024)/1024);
 
-	}
-		return EXIT_SUCCESS;
+                        /* Write raw data size
+                         * By shifting to the right because of little-endianness
+                         * Surely there is a libC function that does this more efficiently.
+                         */
+                        fputc(rawSizeInBytes & 0x000000ff, restoredfile);
+                        fputc((rawSizeInBytes & 0x0000ff00) >> 8, restoredfile);
+                        fputc((rawSizeInBytes & 0x00ff0000) >> 16, restoredfile);
+                        fputc((rawSizeInBytes & 0xff000000) >> 24, restoredfile);
+
+                        for(int h = 0; h < rawSizeInBytes; h++)
+                        {
+                            putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
+                        }
+                        break; /* Break loop to avoid trailing bytes */
+                    }
+                    /* Search: shift array contents leftward
+                     * to avoid overriding, since bytes are written on the the last position.
+                     */
+                    for (int m = 0; m < 3; m++)
+                    {
+                        data[m] = data[m + 1];
+                    }
+                }
+            }
+            /* Shift array contents leftward */
+            for (int b = 0; b < 11; b++)
+            {
+                riff[b] = riff[b + 1];
+            }
+        }
+
+    }
+    return EXIT_SUCCESS;
 }
