@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-
+// Just testing branching
 int main(int argc, char *argv[]){
 	int carve = 0;
 	if (argc < 2){
@@ -22,8 +22,24 @@ int main(int argc, char *argv[]){
 		char data[4];
 		uint32_t rawSizeInBytes;
 		int numBytesBeforeDataChunk = 0;
+
+		char *source;
+	
+		for (int i = 1; i < argc; i++){
+			if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--source") == 0){
+				if ((i + 1) == argc){
+					fprintf(stderr, "Enter a source (call Usage(..))\n");
+					exit(EXIT_FAILURE);
+				}
+				source = argv[i + 1];
+				fprintf(stdout, "The source you entered is %s\n", source);
+				fprintf(stdout, "argc = %d\n", argc);
+				break;
+			}
+		}
+
 		FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
-		FILE *DeviceOrFile = fopen(argv[1], "r");
+		FILE *DeviceOrFile = fopen(source /*rgv[1]*/, "r");
 		
 		while(1){
 			int queryfound = 0;
