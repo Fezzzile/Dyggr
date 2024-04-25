@@ -80,9 +80,9 @@ void wave(FILE *DeviceOrFile)
             riff[11] = carve;
             if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */
             {
-		/* To be added: Avoid appending bytes to an existing file
-		 * if user runs the program multiple times.
-		 */
+                /* To be added: Avoid appending bytes to an existing file
+                 * if user runs the program multiple times.
+                 */
 
                 /* Update restoredfile name here */
                 numFilesRecovered++;
@@ -141,7 +141,7 @@ void wave(FILE *DeviceOrFile)
                 }
             }
             /* Shift array contents leftward
-	     */
+            */
             for (int b = 0; b < 11; b++)
             {
                 riff[b] = riff[b + 1];
