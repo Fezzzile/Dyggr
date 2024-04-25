@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
                     if (carve == EOF)
                     {
                         fprintf(stdout, "End of %s reached.\n", source);
-                        exit(0);
+                        exit(EXIT_SUCCESS);
                     }
                     /* Keep writing bytes until the "data" chunk is reached */
                     putc(carve, restoredfile);
@@ -115,9 +115,8 @@ int main(int argc, char *argv[])
                         {
                             putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
                         }
-
+			fclose(restoredfile);
                         break; /* Break loop to avoid trailing bytes */
-                        fclose(restoredfile);
                     }
                     /* Search: shift array contents leftward
                      * to avoid overriding, since bytes are written on the the last position.
