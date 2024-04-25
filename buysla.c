@@ -73,7 +73,6 @@ int main(int argc, char *argv[])
             {
                 /* Update restoredfile name here */
                 numFilesRecovered++;
-                fprintf(stdout, "Filename before: %s\n", destName);
                 sprintf(destName, "Recovered ");
                 sprintf(tempName, "%d", numFilesRecovered);
                 strcat(destName, tempName);
