@@ -3,9 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-void wave(char *, FILE *);
-
-void Usage(char* progName)
+void wave(FILE *);
+char *source;
+char *progName;
+void Usage(void)
 {
     fprintf(stdout, "\nRecover deleted files (currently WAVE only).\n\n");
     fprintf(stdout, "Usage: %s -s source\n\n", progName);
@@ -15,10 +16,10 @@ void Usage(char* progName)
 }
 int main(int argc, char *argv[])
 {
-    char *source = "";
+    progName = argv[0];
     if (argc < 2)
     {
-        Usage(argv[0]);
+        Usage();
     }
 
     for (int i = 1; i < argc; i++)
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
             if ((i + 1) == argc)
             {
                 fprintf(stderr, "Enter source from which to recover files.\n");
-                Usage(argv[0]);
+                Usage();
             }
             source = argv[i + 1];
             break;
@@ -37,20 +38,20 @@ int main(int argc, char *argv[])
     if (strlen(source) == 0)
     {
         fprintf(stderr, "\nError: No source entered.\n");
-        Usage(argv[0]);
+        Usage();
     }
     FILE *DeviceOrFile = fopen(source, "r");
     if (DeviceOrFile == NULL)
     {
         fprintf(stderr, "\nError: Could not open %s.\n", source);
-        Usage(argv[0]);
+        Usage();
     }
 
-    wave(source, DeviceOrFile);
+    wave(DeviceOrFile);
     return EXIT_SUCCESS;
 }
 
-void wave(char *source, FILE *DeviceOrFile)
+void wave(FILE *DeviceOrFile)
 {
     int numFilesRecovered = 0;
     int carve = 0;
@@ -79,6 +80,10 @@ void wave(char *source, FILE *DeviceOrFile)
             riff[11] = carve;
             if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */
             {
+		/* To be added: Avoid appending bytes to an existing file
+		 * if user runs the program multiple times.
+		 */
+
                 /* Update restoredfile name here */
                 numFilesRecovered++;
                 sprintf(destName, "Recovered ");
@@ -89,7 +94,7 @@ void wave(char *source, FILE *DeviceOrFile)
                 /* Write to the new file */
                 FILE *restoredfile = fopen(destName, "a");
 
-                /* Write "RIFF....WAVE" first  */
+                /* Write "RIFF....WAVE" first */
                 for (int v = 0; v < 12; v++)
                 {
                     fprintf(restoredfile, "%c", riff[v]);
@@ -108,7 +113,7 @@ void wave(char *source, FILE *DeviceOrFile)
                     if (memcmp(data, cmpdata, 4) == 0)  /* "data" chunk found */
                     {
                         fread(&rawSizeInBytes, 1, 4, DeviceOrFile);
-                        fprintf(stdout, "%d MiB WAVE file found.\n", (rawSizeInBytes/1024)/1024);
+                        fprintf(stdout, "%d MiB WAVE file found.\n", rawSizeInBytes >> 20); /* /1024^2 */
 
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
@@ -135,7 +140,8 @@ void wave(char *source, FILE *DeviceOrFile)
                     }
                 }
             }
-            /* Shift array contents leftward */
+            /* Shift array contents leftward
+	     */
             for (int b = 0; b < 11; b++)
             {
                 riff[b] = riff[b + 1];
