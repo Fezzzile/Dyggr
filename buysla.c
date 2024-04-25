@@ -5,10 +5,10 @@
 
 void Usage(char* progName)
 {
-    fprintf(stdout, "\nRestore deleted files (currently WAVE only).\n\n");
-    fprintf(stdout, "Usage: %s -s <source>\n\n", progName);
+    fprintf(stdout, "\nRecover deleted files (currently WAVE only).\n\n");
+    fprintf(stdout, "Usage: %s -s source\n\n", progName);
     fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
-    fprintf(stdout, "%s is distributed with the Apache 2.0 license.\n\n", progName);
+    fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.", progName);
     exit(EXIT_FAILURE);
 }
 int main(int argc, char *argv[])
@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
         Usage(argv[0]);
     }
 
+    int numFilesRecovered = 0;
     while (carve != EOF)
     {
         char riff[12];
@@ -30,6 +31,8 @@ int main(int argc, char *argv[])
         uint32_t rawSizeInBytes;
         int numBytesBeforeDataChunk = 0;
         char *source = "";
+        char destName[100]; //"Recovered";
+        char tempName[1000]; // Used to merge "Recovered" and numFilesRecovered
 
         for (int i = 1; i < argc; i++)
         {
@@ -49,8 +52,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "\nError: No source entered.\n");
             Usage(argv[0]);
         }
-
-        FILE *restoredfile = fopen("Restored.wav", "a"); // Currently all files are appended to this file; need to fix
+        sprintf(destName, "%d", numFilesRecovered);
         FILE *DeviceOrFile = fopen(source, "r");
         if (DeviceOrFile == NULL)
         {
@@ -69,6 +71,17 @@ int main(int argc, char *argv[])
             riff[11] = carve;
             if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */
             {
+                /* Update restoredfile name here */
+                numFilesRecovered++;
+                fprintf(stdout, "Filename before: %s\n", destName);
+                sprintf(destName, "Recovered ");
+                sprintf(tempName, "%d", numFilesRecovered);
+                strcat(destName, tempName);
+                strcat(destName, ".wav");
+
+                /* Write to the new file */
+                FILE *restoredfile = fopen(destName, "a");
+
                 /* Write "RIFF....WAVE" first  */
                 for (int v = 0; v < 12; v++)
                 {
@@ -103,7 +116,9 @@ int main(int argc, char *argv[])
                         {
                             putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
                         }
+
                         break; /* Break loop to avoid trailing bytes */
+                        fclose(restoredfile);
                     }
                     /* Search: shift array contents leftward
                      * to avoid overriding, since bytes are written on the the last position.
