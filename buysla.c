@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
                         fprintf(stdout, "%d MiB WAVE file found.\n", (rawSizeInBytes/1024)/1024);
 
                         /* Write raw data size
-                         * By shifting to the right because of little-endianness
+                         * Bit-shifting to the right because of little-endianness
                          * Surely there is a libC function that does this more efficiently.
                          */
                         fputc(rawSizeInBytes & 0x000000ff, restoredfile);
@@ -134,7 +134,6 @@ int main(int argc, char *argv[])
                 riff[b] = riff[b + 1];
             }
         }
-
     }
     return EXIT_SUCCESS;
 }
