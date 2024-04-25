@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+void wave(char *, FILE *);
+
 void Usage(char* progName)
 {
     fprintf(stdout, "\nRecover deleted files (currently WAVE only).\n\n");
@@ -13,13 +15,46 @@ void Usage(char* progName)
 }
 int main(int argc, char *argv[])
 {
-    int carve = 0;
+    char *source = "";
     if (argc < 2)
     {
         Usage(argv[0]);
     }
 
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
+        {
+            if ((i + 1) == argc)
+            {
+                fprintf(stderr, "Enter source from which to recover files.\n");
+                Usage(argv[0]);
+            }
+            source = argv[i + 1];
+            break;
+        }
+    }
+    if (strlen(source) == 0)
+    {
+        fprintf(stderr, "\nError: No source entered.\n");
+        Usage(argv[0]);
+    }
+    FILE *DeviceOrFile = fopen(source, "r");
+    if (DeviceOrFile == NULL)
+    {
+        fprintf(stderr, "\nError: Could not open %s.\n", source);
+        Usage(argv[0]);
+    }
+
+    wave(source, DeviceOrFile);
+    return EXIT_SUCCESS;
+}
+
+void wave(char *source, FILE *DeviceOrFile)
+{
     int numFilesRecovered = 0;
+    int carve = 0;
+
     while (carve != EOF)
     {
         char riff[12];
@@ -29,36 +64,9 @@ int main(int argc, char *argv[])
         char cmpdata[] = "data";
         char data[4];
         uint32_t rawSizeInBytes;
-        int numBytesBeforeDataChunk = 0;
-        char *source = "";
         char destName[100]; //"Recovered";
         char tempName[1000]; // Used to merge "Recovered" and numFilesRecovered
-
-        for (int i = 1; i < argc; i++)
-        {
-            if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
-            {
-                if ((i + 1) == argc)
-                {
-                    fprintf(stderr, "Enter source from which to carve files.\n");
-                    Usage(argv[0]);
-                }
-                source = argv[i + 1];
-                break;
-            }
-        }
-        if (strlen(source) == 0)
-        {
-            fprintf(stderr, "\nError: No source entered.\n");
-            Usage(argv[0]);
-        }
         sprintf(destName, "%d", numFilesRecovered);
-        FILE *DeviceOrFile = fopen(source, "r");
-        if (DeviceOrFile == NULL)
-        {
-            fprintf(stderr, "\nError: Could not open %s.\n", source);
-            Usage(argv[0]);
-        }
 
         while(1)
         {
@@ -115,7 +123,7 @@ int main(int argc, char *argv[])
                         {
                             putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
                         }
-			fclose(restoredfile);
+                        fclose(restoredfile);
                         break; /* Break loop to avoid trailing bytes */
                     }
                     /* Search: shift array contents leftward
@@ -134,5 +142,4 @@ int main(int argc, char *argv[])
             }
         }
     }
-    return EXIT_SUCCESS;
 }
