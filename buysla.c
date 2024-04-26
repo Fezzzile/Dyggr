@@ -2,22 +2,26 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+typedef uint8_t byte;
 
 void wave(FILE *);
+void webp(FILE *);
 char *source;
 char *progName;
+
+
 void Usage(void)
 {
     fprintf(stdout, "\nRecover deleted files (currently WAVE only).\n\n");
     fprintf(stdout, "Usage: %s -s source\n\n", progName);
     fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
-    fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.", progName);
+    fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.\n", progName);
     exit(EXIT_FAILURE);
 }
 int main(int argc, char *argv[])
 {
     progName = argv[0];
-    if (argc < 2)
+    if (argc < 3)
     {
         Usage();
     }
@@ -47,10 +51,80 @@ int main(int argc, char *argv[])
         Usage();
     }
 
-    wave(DeviceOrFile);
+    //wave(DeviceOrFile);
+    webp(DeviceOrFile);
     return EXIT_SUCCESS;
 }
 
+void webp(FILE *DeviceOrFile)
+{
+    int numFilesRecovered = 0;
+    int carve = 0;
+    while (carve != EOF)
+    {
+        byte riff[12];
+        char tempriff[12];
+        char cmpriff[] = "RIFF";
+        char cmpwebp[] = "WEBP";
+        /*uint32_t */ int fileSize;
+        char destName[100]; //"Recovered";
+        char tempName[1000]; /*"Used to catenate numFilesRecovered to "Recovered"*/
+        sprintf(destName, "%d", numFilesRecovered);
+        riff[11] = carve;
+
+
+        while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0))
+        {
+            //fprintf(stdout, "%d & %d\n", memcmp(riff, cmpriff, 4), memcmp(&riff[8], cmpwebp, 4)); // Debug
+            carve = getc(DeviceOrFile);
+            if (carve == EOF)
+            {
+                fprintf(stdout, "End of %s reached.\n", source);
+                exit(EXIT_SUCCESS);
+            }
+            for (int b = 0; b < 11; b++)
+            {
+                riff[b] = riff[b + 1];
+            }
+            riff[11] = carve;
+        }
+        puts("Outside searching loop");
+        fprintf(stdout, "%d & %d\n", memcmp(riff, cmpriff, 4), memcmp(&riff[8], cmpwebp, 4));
+
+        fprintf(stdout, "webp found\n");
+        numFilesRecovered++;
+        //fileSize = (((riff[7] << 24) | (riff[6] << 16))|(riff[5] << 8))|riff[4];
+        fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8)|riff[4];
+        fprintf(stdout, "fileSize is %d\n", fileSize + 8);
+	
+	/* All the remaining lines have to be converted to a funtion
+	 * since I use the same steps in the wave(..) function.
+	 */
+        sprintf(destName, "Recovered ");
+        sprintf(tempName, "%d", numFilesRecovered);
+        strcat(destName, tempName);
+        strcat(destName, ".webp");
+
+        /* Write to the new file */
+        FILE *restoredfile = fopen(destName, "a");
+
+        /* Write "RIFF....WEBP" first */
+        for (int v = 0; v < 12; v++)
+        {
+            fprintf(restoredfile, "%c", riff[v]);
+        }
+        for (int i = 0; i < fileSize - 4; i++)  // Minus 4, to avoid appending four 0xff bytes to the tail
+        {
+            carve = getc(DeviceOrFile);
+            putc(carve, restoredfile);
+        }
+        fclose(restoredfile);
+        if (carve == EOF){
+        	fprintf(stdout, "Reached end of %s\n", source);
+        }
+
+    }
+}
 void wave(FILE *DeviceOrFile)
 {
     int numFilesRecovered = 0;
@@ -58,7 +132,7 @@ void wave(FILE *DeviceOrFile)
 
     while (carve != EOF)
     {
-        char riff[12];
+        uint8_t riff[12];
         char tempriff[12];
         char cmpriff[] = "RIFF";
         char cmpwave[] = "WAVE";
@@ -75,7 +149,7 @@ void wave(FILE *DeviceOrFile)
             if (carve == EOF)
             {
                 fprintf(stdout, "End of %s reached.\n", source);
-                exit(0);
+                exit(EXIT_SUCCESS);
             }
             riff[11] = carve;
             if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */
