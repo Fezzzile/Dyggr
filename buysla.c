@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
     progName = argv[0];
     /* It is easy to break this arguments source code.
      * Will fix it later.
+     *
+     * To be added: -f (and maybe --format)
      */
     if (argc < 3)
     {
