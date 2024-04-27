@@ -146,9 +146,17 @@ void webp(FILE *DeviceOrFile)
             carve = getc(DeviceOrFile);
             putc(carve, restoredfile);
         }
+        if (fileSize < 1048576)
+        {
+            fprintf(stdout, "Recovered %d KiB WebP file.\n", fileSize >> 10);
+        }
+        else
+        {
+            fprintf(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
+        }
 
-        fprintf(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
         fclose(restoredfile);
+
         if (carve == EOF)
         {
             fprintf(stdout, "Reached end of %s\n", source);
