@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
      * Will fix it later.
      *
      * To be added: -f (and maybe --format)
+     * -v (verbose) should be by default because printing to stdout slows down the program.
      */
     if (argc < 3)
     {
@@ -77,7 +78,6 @@ void webp(FILE *DeviceOrFile)
         sprintf(destName, "%d", numFilesRecovered);
         riff[11] = carve;
 
-
         while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0))
         {
             carve = getc(DeviceOrFile);
@@ -115,7 +115,10 @@ void webp(FILE *DeviceOrFile)
         {
             fprintf(restoredfile, "%c", riff[v]);
         }
-        for (int i = 0; i < fileSize - 4; i++)  // Minus 4, to avoid appending four 0xff bytes to the tail
+	/* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
+	 * have already been written to the file as part of the RIFF header.
+	 */
+        for (int i = 0; i < fileSize - 4; i++) 
         {
             carve = getc(DeviceOrFile);
             putc(carve, restoredfile);
@@ -125,7 +128,6 @@ void webp(FILE *DeviceOrFile)
         {
             fprintf(stdout, "Reached end of %s\n", source);
         }
-
     }
 }
 void wave(FILE *DeviceOrFile)
