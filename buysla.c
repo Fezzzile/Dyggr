@@ -8,6 +8,7 @@ void wave(FILE *);
 void webp(FILE *);
 char *source;
 char *progName;
+char *fileFormat;
 
 
 void Usage(void)
@@ -25,13 +26,13 @@ int main(int argc, char *argv[])
      * Will fix it later.
      *
      * To be added: -f (and maybe --format)
-     * -v (verbose) should be by default because printing to stdout slows down the program.
+     * -v (verbose) should be off by default because printing to stdout slows down the program.
      */
     if (argc < 3)
     {
         Usage();
     }
-    
+
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
@@ -42,12 +43,29 @@ int main(int argc, char *argv[])
                 Usage();
             }
             source = argv[i + 1];
-            break;
+            //  break;
+        }
+        //exit(0);
+
+        if (strcmp(argv[i], "-f") == 0)
+        {
+            if ((i + 1) == argc)
+            {
+                fprintf(stderr, "Enter file format.\n");
+                Usage();
+            }
+            fileFormat = argv[i + 1];
+            //	break;
         }
     }
     if (strlen(source) == 0)
     {
         fprintf(stderr, "\nError: No source entered.\n");
+        Usage();
+    }
+    if (strlen(fileFormat) == 0)
+    {
+        fprintf(stderr, "\nError: No file format entered.\n");
         Usage();
     }
     FILE *DeviceOrFile = fopen(source, "r");
@@ -57,8 +75,15 @@ int main(int argc, char *argv[])
         Usage();
     }
 
-    //wave(DeviceOrFile);
-    webp(DeviceOrFile);
+    if (strcmp(fileFormat, "wave") == 0)
+    {
+        wave(DeviceOrFile);
+    }
+    if (strcmp(fileFormat, "webp") == 0)
+    {
+        webp(DeviceOrFile);
+    }
+
     return EXIT_SUCCESS;
 }
 
@@ -93,11 +118,9 @@ void webp(FILE *DeviceOrFile)
             riff[11] = carve;
         }
 
-        fprintf(stdout, "webp found\n");
         numFilesRecovered++;
         //fileSize = (((riff[7] << 24) | (riff[6] << 16))|(riff[5] << 8))|riff[4];
         fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8)|riff[4];
-        fprintf(stdout, "fileSize is %d\n", fileSize + 8);
 
         /* All the remaining lines have to be converted to a funtion
          * since I use the same steps in the wave(..) function.
@@ -115,14 +138,16 @@ void webp(FILE *DeviceOrFile)
         {
             fprintf(restoredfile, "%c", riff[v]);
         }
-	/* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
-	 * have already been written to the file as part of the RIFF header.
-	 */
-        for (int i = 0; i < fileSize - 4; i++) 
+        /* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
+         * have already been written to the file as part of the RIFF header.
+         */
+        for (int i = 0; i < fileSize - 4; i++)
         {
             carve = getc(DeviceOrFile);
             putc(carve, restoredfile);
         }
+
+        fprintf(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
         fclose(restoredfile);
         if (carve == EOF)
         {
@@ -192,7 +217,6 @@ void wave(FILE *DeviceOrFile)
                     if (memcmp(data, cmpdata, 4) == 0)  /* "data" chunk found */
                     {
                         fread(&rawSizeInBytes, 1, 4, DeviceOrFile);
-                        fprintf(stdout, "%d MiB WAVE file found.\n", rawSizeInBytes >> 20); /* /1024^2 */
 
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
@@ -208,6 +232,7 @@ void wave(FILE *DeviceOrFile)
                             putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
                         }
                         fclose(restoredfile);
+                        fprintf(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
                         break; /* Break loop to avoid trailing bytes */
                     }
                     /* Search: shift array contents leftward
