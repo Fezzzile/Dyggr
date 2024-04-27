@@ -21,11 +21,14 @@ void Usage(void)
 int main(int argc, char *argv[])
 {
     progName = argv[0];
+    /* It is easy to break this arguments source code.
+     * Will fix it later.
+     */
     if (argc < 3)
     {
         Usage();
     }
-
+    
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
@@ -66,7 +69,7 @@ void webp(FILE *DeviceOrFile)
         char tempriff[12];
         char cmpriff[] = "RIFF";
         char cmpwebp[] = "WEBP";
-        /*uint32_t */ int fileSize;
+        uint32_t fileSize;
         char destName[100]; //"Recovered";
         char tempName[1000]; /*"Used to catenate numFilesRecovered to "Recovered"*/
         sprintf(destName, "%d", numFilesRecovered);
@@ -75,7 +78,6 @@ void webp(FILE *DeviceOrFile)
 
         while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0))
         {
-            //fprintf(stdout, "%d & %d\n", memcmp(riff, cmpriff, 4), memcmp(&riff[8], cmpwebp, 4)); // Debug
             carve = getc(DeviceOrFile);
             if (carve == EOF)
             {
@@ -88,18 +90,16 @@ void webp(FILE *DeviceOrFile)
             }
             riff[11] = carve;
         }
-        puts("Outside searching loop");
-        fprintf(stdout, "%d & %d\n", memcmp(riff, cmpriff, 4), memcmp(&riff[8], cmpwebp, 4));
 
         fprintf(stdout, "webp found\n");
         numFilesRecovered++;
         //fileSize = (((riff[7] << 24) | (riff[6] << 16))|(riff[5] << 8))|riff[4];
         fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8)|riff[4];
         fprintf(stdout, "fileSize is %d\n", fileSize + 8);
-	
-	/* All the remaining lines have to be converted to a funtion
-	 * since I use the same steps in the wave(..) function.
-	 */
+
+        /* All the remaining lines have to be converted to a funtion
+         * since I use the same steps in the wave(..) function.
+         */
         sprintf(destName, "Recovered ");
         sprintf(tempName, "%d", numFilesRecovered);
         strcat(destName, tempName);
@@ -108,7 +108,7 @@ void webp(FILE *DeviceOrFile)
         /* Write to the new file */
         FILE *restoredfile = fopen(destName, "a");
 
-        /* Write "RIFF....WEBP" first */
+        /* Write "RIFFfileSizeWEBP" first */
         for (int v = 0; v < 12; v++)
         {
             fprintf(restoredfile, "%c", riff[v]);
@@ -119,8 +119,9 @@ void webp(FILE *DeviceOrFile)
             putc(carve, restoredfile);
         }
         fclose(restoredfile);
-        if (carve == EOF){
-        	fprintf(stdout, "Reached end of %s\n", source);
+        if (carve == EOF)
+        {
+            fprintf(stdout, "Reached end of %s\n", source);
         }
 
     }
