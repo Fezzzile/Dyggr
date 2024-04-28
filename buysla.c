@@ -2,14 +2,30 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-typedef uint8_t byte;
 
+/* Formats to be added:
+ * DNG (Losing the hundreds of raw images I took with smartphones would depress me.)
+ * FLAC (I read the spec a little: this will be more challenging.)
+ * Opus (Fun fact: I struggle to tell apart lossless files and low-bitrate Opus files, but the purist in me refuses to delete the former.)
+ * PNG
+ * PPM (Magic number, P6, too short, so many false positives to be expected.)
+ * SVG
+ * TeX
+ * TIFF
+ * WavPack (FLAC does not support DSD and 32bf PCM.)
+ */
+
+/* Features likely to be added:
+ * POSIX threads (#include <pthread.h>)
+ * Allow the user to enter a magic number and the number of to be read from the header
+ */
+
+typedef uint8_t byte;
 void wave(FILE *);
 void webp(FILE *);
 char *source;
 char *progName;
 char *fileFormat;
-
 
 void Usage(void)
 {
@@ -19,6 +35,7 @@ void Usage(void)
     fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.\n", progName);
     exit(EXIT_FAILURE);
 }
+
 int main(int argc, char *argv[])
 {
     progName = argv[0];
@@ -45,7 +62,6 @@ int main(int argc, char *argv[])
             source = argv[i + 1];
             //  break;
         }
-        //exit(0);
 
         if (strcmp(argv[i], "-f") == 0)
         {
@@ -119,8 +135,8 @@ void webp(FILE *DeviceOrFile)
         }
 
         numFilesRecovered++;
-        //fileSize = (((riff[7] << 24) | (riff[6] << 16))|(riff[5] << 8))|riff[4];
-        fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8)|riff[4];
+        //fileSize = (((riff[7] << 24) | (riff[6] << 16)) | (riff[5] << 8)) | riff[4];
+        fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8) | riff[4];
 
         /* All the remaining lines have to be converted to a funtion
          * since I use the same steps in the wave(..) function.
@@ -177,8 +193,10 @@ void wave(FILE *DeviceOrFile)
         char cmpdata[] = "data";
         char data[4];
         uint32_t rawSizeInBytes;
+
+	/* Arbitrary array size for now */
         char destName[100]; //"Recovered";
-        char tempName[1000]; // Used to merge "Recovered" and numFilesRecovered
+        char tempName[1000]; // Used to concatenate "Recovered" and numFilesRecovered
         sprintf(destName, "%d", numFilesRecovered);
 
         while(1)
