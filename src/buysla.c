@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     /* It is easy to break this arguments source code.
      * Will fix it later. getopt?
      *
-     * To be added: -f (and maybe --format)
+     * To be added: 
      * -v (verbose) should be off by default because printing to stdout slows down the program.
      *  Would fflushing(stdout) give the output some speed?
      */
