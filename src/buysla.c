@@ -11,13 +11,16 @@
  * PPM (Magic number, P6, too short, so many false positives to be expected.)
  * SVG
  * TeX
- * TIFF
- * WavPack (FLAC does not support DSD and 32bf PCM.)
+ * TIFF (DNG uses the TIFF container, so I should study the latter before progressing to the former.)
+ * WavPack (FLAC does not support DSD and float32 PCM, so WavPack is essential (for archiving and processing; no benefit whatsoever to the human ear.))
  */
 
-/* Features likely to be added:
- * POSIX threads (#include <pthread.h>)
- * Allow the user to enter a magic number and the number of to be read from the header
+/* Features I hope to add in the last stages:
+ * Concurrency/threads.
+ * Allowing the user to enter a magic number and the number of bytes (offset) to be read from the header
+ * to the assumed tail. Files will be readable but some readers will require the file size/length to be fixed first.
+ * For example, if you append random bytes to a WAV file (`cat /dev/random >> song.wav` and ctrl+c immediately),
+ * import the file to Audacity, if you export it to another WAV file the file size/length will be fixed.
  */
 
 typedef uint8_t byte;
@@ -40,10 +43,11 @@ int main(int argc, char *argv[])
 {
     progName = argv[0];
     /* It is easy to break this arguments source code.
-     * Will fix it later.
+     * Will fix it later. getopt?
      *
      * To be added: -f (and maybe --format)
      * -v (verbose) should be off by default because printing to stdout slows down the program.
+     *  Would fflushing(stdout) give the output some speed?
      */
     if (argc < 3)
     {
@@ -147,7 +151,7 @@ void webp(FILE *DeviceOrFile)
         strcat(destName, ".webp");
 
         /* Write to the new file */
-        FILE *restoredfile = fopen(destName, "a");
+        FILE *restoredfile = fopen(destName, "ab");
 
         /* Write "RIFFfileSizeWEBP" first */
         for (int v = 0; v < 12; v++)
@@ -157,6 +161,7 @@ void webp(FILE *DeviceOrFile)
         /* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
          * have already been written to the file as part of the RIFF header.
          */
+	/* I used fread(..), to buffer, and fwrite(..), to restoredfile, in the wave(..) function. */
         for (int i = 0; i < fileSize - 4; i++)
         {
             carve = getc(DeviceOrFile);
@@ -247,16 +252,37 @@ void wave(FILE *DeviceOrFile)
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
                          * Surely there is a libC function that does this more efficiently.
+			 *
+			 * Or I could reposition the file position indicator position back 4 bytes
+			 * with fseek(..), because this could fail in a big-endian system (not tested).
                          */
                         fputc(rawSizeInBytes & 0x000000ff, restoredfile);
                         fputc((rawSizeInBytes & 0x0000ff00) >> 8, restoredfile);
                         fputc((rawSizeInBytes & 0x00ff0000) >> 16, restoredfile);
                         fputc((rawSizeInBytes & 0xff000000) >> 24, restoredfile);
+			
+			/* Append the raw audio data */
+			/* fwrite(..) requires me to first read the data into a buffer in memory.
+			 * Simply trying to read from the DeviceOrFile always fails,
+			 * even if I try to cast "FILE *" to "uint8_t *".
+			 *
+			 * The for_loop immidiately following fwrite(..) is the old version
+			 * that appends the raw PCM data to restoredfile.
+			 * I'll have to do some tests to check which is faster.
+			 */
 
-                        for(int h = 0; h < rawSizeInBytes; h++)
+			/* Potentially use 4 GiB (minus header size) of memory,
+			 * in which case the non-buffered version below, putc(..), may be more appropriate.
+			 */
+			uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes); 
+			fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
+			fwrite(buffer, 1, rawSizeInBytes, restoredfile);
+
+                        /*for(int h = 0; h < rawSizeInBytes; h++)
                         {
                             putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
-                        }
+                        }*/
+
                         fclose(restoredfile);
                         fprintf(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
                         break; /* Break loop to avoid trailing bytes */
