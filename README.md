@@ -1,18 +1,13 @@
-# buysla
+# Dyggr 
 
-Restore deleted files.
+Recover deleted files.
 
-The word *buysla* is from the Nguni word *buyisela*, meaning "restore."
+The word *Dyggr* is pronounced as *Digger*. 
 
-I promise, it is not a short for *buy a Tesla*, although it doesn't hurt to use this phrase as a mnemonic.
-
-Currently, the program restores deleted or lost files by carving,
+Currently, the program recovers deleted or lost files by carving,
 that is, searching for file signatures in a given file or device.
  
-I am going to start with file formats that use the RIFF header, such as WAV and WebP.
-
-I chose RIFF because of its simplicity.
-
+I started with formats that use RIFF (WAV and WebP).
 I will then slowly add file formats with more-complicated headers.
 
 If the file is fragmented, that is, broken up and stored in non-consecutive addresses in the device, carving will not work.
