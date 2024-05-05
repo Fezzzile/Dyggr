@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     /* It is easy to break this arguments source code.
      * Will fix it later. getopt?
      *
-     * To be added: 
+     * To be added:
      * -v (verbose) should be off by default because printing to stdout slows down the program.
      *  Would fflushing(stdout) give the output some speed?
      */
@@ -161,7 +161,7 @@ void webp(FILE *DeviceOrFile)
         /* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
          * have already been written to the file as part of the RIFF header.
          */
-	/* I used fread(..), to buffer, and fwrite(..), to restoredfile, in the wave(..) function. */
+        /* I used fread(..), to buffer, and fwrite(..), to restoredfile, in the wave(..) function. */
         for (int i = 0; i < fileSize - 4; i++)
         {
             carve = getc(DeviceOrFile);
@@ -199,7 +199,7 @@ void wave(FILE *DeviceOrFile)
         char data[4];
         uint32_t rawSizeInBytes;
 
-	/* Arbitrary array size for now */
+        /* Arbitrary array size for now */
         char destName[100]; //"Recovered";
         char tempName[1000]; // Used to concatenate "Recovered" and numFilesRecovered
         sprintf(destName, "%d", numFilesRecovered);
@@ -252,31 +252,31 @@ void wave(FILE *DeviceOrFile)
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
                          * Surely there is a libC function that does this more efficiently.
-			 *
-			 * Or I could reposition the file position indicator position back 4 bytes
-			 * with fseek(..), because this could fail in a big-endian system (not tested).
-                         */
+                        *
+                        		 * Or I could reposition the file position indicator position back 4 bytes
+                        		 * with fseek(..), because this could fail in a big-endian system (not tested).
+                                             */
                         fputc(rawSizeInBytes & 0x000000ff, restoredfile);
                         fputc((rawSizeInBytes & 0x0000ff00) >> 8, restoredfile);
                         fputc((rawSizeInBytes & 0x00ff0000) >> 16, restoredfile);
                         fputc((rawSizeInBytes & 0xff000000) >> 24, restoredfile);
-			
-			/* Append the raw audio data */
-			/* fwrite(..) requires me to first read the data into a buffer in memory.
-			 * Simply trying to read from the DeviceOrFile always fails,
-			 * even if I try to cast "FILE *" to "uint8_t *".
-			 *
-			 * The for_loop immidiately following fwrite(..) is the old version
-			 * that appends the raw PCM data to restoredfile.
-			 * I'll have to do some tests to check which is faster.
-			 */
 
-			/* Potentially use 4 GiB (minus header size) of memory,
-			 * in which case the non-buffered version below, putc(..), may be more appropriate.
-			 */
-			uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes); 
-			fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
-			fwrite(buffer, 1, rawSizeInBytes, restoredfile);
+                        /* Append the raw audio data */
+                        /* fwrite(..) requires me to first read the data into a buffer in memory.
+                         * Simply trying to read from the DeviceOrFile always fails,
+                         * even if I try to cast "FILE *" to "uint8_t *".
+                         *
+                         * The for_loop immidiately following fwrite(..) is the old version
+                         * that appends the raw PCM data to restoredfile.
+                         * I'll have to do some tests to check which is faster.
+                         */
+
+                        /* Potentially use 4 GiB (minus header size) of memory,
+                         * in which case the non-buffered version below, putc(..), may be more appropriate.
+                         */
+                        uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
+                        fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
+                        fwrite(buffer, 1, rawSizeInBytes, restoredfile);
 
                         /*for(int h = 0; h < rawSizeInBytes; h++)
                         {
