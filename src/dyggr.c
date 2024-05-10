@@ -32,7 +32,7 @@ char *fileFormat;
 
 void Usage(void)
 {
-    fprintf(stdout, "\nRecover deleted files (currently WAVE only).\n\n");
+    fprintf(stdout, "\nRecover deleted files (currently WAV & WebP only).\n\n");
     fprintf(stdout, "Usage: %s -s source\n\n", progName);
     fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
     fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.\n", progName);
