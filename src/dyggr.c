@@ -162,11 +162,37 @@ void webp(FILE *DeviceOrFile)
          * have already been written to the file as part of the RIFF header.
          */
         /* I used fread(..), to buffer, and fwrite(..), to restoredfile, in the wave(..) function. */
-        for (int i = 0; i < fileSize - 4; i++)
+        /*for (int i = 0; i < fileSize - 4; i++)
         {
             carve = getc(DeviceOrFile);
             putc(carve, restoredfile);
+        }*/
+        uint8_t *buffer = (uint8_t *) malloc(fileSize - 4);
+        if (buffer != NULL)
+        {
+            fprintf(stdout, "Buffered version.\n");
+            fread(buffer, 1, fileSize - 4, DeviceOrFile);
+            fwrite(buffer, 1, fileSize - 4, restoredfile);
+            carve = getc(DeviceOrFile); // Without updating, a whole lot of weirdness occurs.
         }
+        else
+        {
+            /* malloc failed.
+             * One byte at a time; slow as a snail.
+             */
+            fprintf(stdout, "malloc failed. Non-buffered version.\n");
+            for (int h = 0; h < fileSize - 4; h++)
+            {
+                carve = getc(DeviceOrFile); /* Buggy if carve is not updated.
+						     * Take this into consideration when creating a write
+						     * function for webp() and webp().
+						     * This is because of the while loops. wave() uses while(1).
+						     * Solution: wave() has to use while-loops similar to webp()'s.
+						     */
+                putc(carve, restoredfile); // Append the raw audio data
+            }
+        }
+
         if (fileSize < 1048576)
         {
             fprintf(stdout, "Recovered %d KiB WebP file.\n", fileSize >> 10);
@@ -252,10 +278,10 @@ void wave(FILE *DeviceOrFile)
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
                          * Surely there is a libC function that does this more efficiently.
-                        *
-                        		 * Or I could reposition the file position indicator position back 4 bytes
-                        		 * with fseek(..), because this could fail in a big-endian system (not tested).
-                                             */
+                         *
+                         * Or I could reposition the file position indicator position back 4 bytes
+                         * with fseek(..), because this could fail in a big-endian system (not tested).
+                         */
                         fputc(rawSizeInBytes & 0x000000ff, restoredfile);
                         fputc((rawSizeInBytes & 0x0000ff00) >> 8, restoredfile);
                         fputc((rawSizeInBytes & 0x00ff0000) >> 16, restoredfile);
@@ -269,24 +295,27 @@ void wave(FILE *DeviceOrFile)
                          * The for_loop immidiately following fwrite(..) is the old version
                          * that appends the raw PCM data to restoredfile.
                          * I'll have to do some tests to check which is faster.
-			 * Update: Buffered version is *way* faster.
-                         */
+                        * Update: Buffered version is *way* faster.
+                                             */
 
                         /* Potentially use 4 GiB (minus header size) of memory,
                          */
                         uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
-			if (buffer != NULL) {
-                        	fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
-                        	fwrite(buffer, 1, rawSizeInBytes, restoredfile);
-			} else { 
-				/* malloc failed.
-				 * One byte at a time; slow as a snail.
-				 */
-                        	for(int h = 0; h < rawSizeInBytes; h++)
-                       		 {
-                       		     putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
-				 }
-			}
+                        if (buffer != NULL)
+                        {
+                            fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
+                            fwrite(buffer, 1, rawSizeInBytes, restoredfile);
+                        }
+                        else
+                        {
+                            /* malloc failed.
+                             * One byte at a time; slow as a snail.
+                             */
+                            for(int h = 0; h < rawSizeInBytes; h++)
+                            {
+                                putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
+                            }
+                        }
 
                         fclose(restoredfile);
                         fprintf(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
