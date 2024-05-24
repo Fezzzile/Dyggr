@@ -269,19 +269,24 @@ void wave(FILE *DeviceOrFile)
                          * The for_loop immidiately following fwrite(..) is the old version
                          * that appends the raw PCM data to restoredfile.
                          * I'll have to do some tests to check which is faster.
+			 * Update: Buffered version is *way* faster.
                          */
 
                         /* Potentially use 4 GiB (minus header size) of memory,
-                         * in which case the non-buffered version below, putc(..), may be more appropriate.
                          */
                         uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
-                        fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
-                        fwrite(buffer, 1, rawSizeInBytes, restoredfile);
-
-                        /*for(int h = 0; h < rawSizeInBytes; h++)
-                        {
-                            putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
-                        }*/
+			if (buffer != NULL) {
+                        	fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
+                        	fwrite(buffer, 1, rawSizeInBytes, restoredfile);
+			} else { 
+				/* malloc failed.
+				 * One byte at a time; slow as a snail.
+				 */
+                        	for(int h = 0; h < rawSizeInBytes; h++)
+                       		 {
+                       		     putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
+				 }
+			}
 
                         fclose(restoredfile);
                         fprintf(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
