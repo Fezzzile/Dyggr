@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* Formats to be added:
+/* TODO:Formats to be added:
  * DNG (Losing the hundreds of raw images I took with smartphones would depress me.)
  * FLAC (I read the spec a little: this will be more challenging.)
  * Opus (Fun fact: I struggle to tell apart lossless files and low-bitrate Opus files, but the purist in me refuses to delete the former.)
@@ -15,7 +15,7 @@
  * WavPack (FLAC does not support DSD and float32 PCM, so WavPack is essential (for archiving and processing; no benefit whatsoever to the human ear.))
  */
 
-/* Features I hope to add in the last stages:
+/* TODO:Features I hope to add in the last stages:
  * Concurrency/threads.
  * Allowing the user to enter a magic number and the number of bytes (offset) to be read from the header
  * to the assumed tail. Files will be readable but some readers will require the file size/length to be fixed first.
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     /* It is easy to break this arguments source code.
      * Will fix it later. getopt?
      *
-     * To be added:
+     * TODO:
      * -v (verbose) should be off by default because printing to stdout slows down the program.
      *  Would fflushing(stdout) give the output some speed?
      */
