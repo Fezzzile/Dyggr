@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
      * -v (verbose) should be off by default because printing to stdout slows down the program.
      *  Would fflushing(stdout) give the output some speed?
      */
+     /* TODO: Create list (array) of valid formats.*/
     if (argc < 3)
     {
         Usage();
