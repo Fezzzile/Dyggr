@@ -162,11 +162,6 @@ void webp(FILE *DeviceOrFile)
          * have already been written to the file as part of the RIFF header.
          */
         /* I used fread(..), to buffer, and fwrite(..), to restoredfile, in the wave(..) function. */
-        /*for (int i = 0; i < fileSize - 4; i++)
-        {
-            carve = getc(DeviceOrFile);
-            putc(carve, restoredfile);
-        }*/
         uint8_t *buffer = (uint8_t *) malloc(fileSize - 4);
         if (buffer != NULL)
         {
