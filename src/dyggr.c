@@ -305,7 +305,7 @@ void wave(FILE *DeviceOrFile)
 
                         /* Write raw data size
                          * Bit-shifting to the right because of little-endianness
-                         * Surely there is a libC function, maybe in <endian.h> that does this more efficiently.
+                         * Surely there is a libC function, maybe in <endian.h>, that does this more efficiently.
                          *
                          * Or I could reposition the file position indicator position back 4 bytes
                          * with fseek(..), because this could fail in a big-endian system (not tested).
