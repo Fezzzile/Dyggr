@@ -198,7 +198,6 @@ void webp(FILE *DeviceOrFile)
         uint8_t *buffer = (uint8_t *) malloc(fileSize - 4);
         if (buffer != NULL)
         {
-            fprintf(stdout, "Buffered version.\n");
             fread(buffer, 1, fileSize - 4, DeviceOrFile);
             fwrite(buffer, 1, fileSize - 4, restoredfile);
             carve = getc(DeviceOrFile); // Without updating, a whole lot of weirdness occurs.
@@ -208,7 +207,6 @@ void webp(FILE *DeviceOrFile)
             /* malloc failed.
              * One byte at a time; slow as a snail.
              */
-            fprintf(stdout, "malloc failed. Non-buffered version.\n");
             for (int h = 0; h < fileSize - 4; h++)
             {
                 carve = getc(DeviceOrFile); /* Buggy if carve is not updated.
