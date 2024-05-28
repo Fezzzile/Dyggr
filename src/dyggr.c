@@ -32,8 +32,9 @@ char *fileFormat;
 
 void Usage(void)
 {
-    fprintf(stdout, "\nRecover deleted files (currently WAV & WebP only).\n\n");
-    fprintf(stdout, "Usage: %s -s source\n\n", progName);
+    fprintf(stdout, "\nRecover deleted files.\n\n");
+    fprintf(stdout, "Usage: %s -f <format> -s <source/device to scan>\n\n", progName);
+    fprintf(stdout, "Currently available formats: \"webp\", \"wav\"\n\n");
     fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
     fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.\n", progName);
     exit(EXIT_FAILURE);
@@ -96,11 +97,11 @@ int main(int argc, char *argv[])
         Usage();
     }
 
-    if (strcmp(fileFormat, "wave") == 0)
+    if (strcasecmp(fileFormat, "wav") == 0 || strcasecmp(fileFormat, "wave") == 0)
     {
         wave(DeviceOrFile);
     }
-    if (strcmp(fileFormat, "webp") == 0)
+    if (strcasecmp(fileFormat, "webp") == 0)
     {
         webp(DeviceOrFile);
     }
