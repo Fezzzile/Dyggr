@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* TODO:Formats to be added:
+/* TODO: Formats to be added:
  * DNG (Losing the hundreds of raw images I took with smartphones would depress me.)
  * FLAC (I read the spec a little: this will be more challenging.)
  * Opus (Fun fact: I struggle to tell apart lossless files and low-bitrate Opus files, but the purist in me refuses to delete the former.)
@@ -15,7 +15,7 @@
  * WavPack (FLAC does not support DSD and float32 PCM, so WavPack is essential (for archiving and processing; no benefit whatsoever to the human ear.))
  */
 
-/* TODO:Features I hope to add in the last stages:
+/* TODO: Features I hope to add in the last stages:
  * Concurrency/threads.
  * Allowing the user to enter a magic number and the number of bytes (offset) to be read from the header
  * to the assumed tail. Files will be readable but some readers will require the file size/length to be fixed first.
@@ -26,18 +26,44 @@
 typedef uint8_t byte;
 void wave(FILE *);
 void webp(FILE *);
-char *source;
+char *source = "";
 char *progName;
-char *fileFormat;
+char *fileFormat = "";
+int sourceargc = 0; // Count instance of '-s'
+int formatargc = 0; // Count instance of '-f'
+char *validfileformats[] = {"wav", "webp"};
+
 
 void Usage(void)
 {
-    fprintf(stdout, "\nRecover deleted files.\n\n");
-    fprintf(stdout, "Usage: %s -f <format> -s <source/device to scan>\n\n", progName);
-    fprintf(stdout, "Currently available formats: \"webp\", \"wav\"\n\n");
-    fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
-    fprintf(stdout, "%s is distributed under the terms of the Apache 2.0 license.\n", progName);
+    fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+    fprintf(stdout, "Usage: %s -f <file format> -s <source/device to scan>\n\n", progName);
+    fprintf(stdout, "File formats: \n");
+    for (int i = 0; i < 2; i++) {
+	    fprintf(stdout, "\t\t\"%s\"\n", validfileformats[i]);
+    }
+    fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
     exit(EXIT_FAILURE);
+}
+
+void Greeting(void)
+{
+    fprintf(stdout, "\nDyggr: recover deleted files.\n\n");
+    fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
+    fprintf(stdout, "Dyggr is distributed under the terms of the Apache 2.0 license.\n\n");
+}
+
+void checkfileformat(void){
+	int isvalid = 0;
+	for (int i = 0; i < 2; i++) {
+		if (strcasecmp(fileFormat, validfileformats[i]) == 0) {
+			isvalid = 1;	
+		}
+	}
+	if (!isvalid){
+		fprintf(stderr, "Error: Invalid file format.\n");
+		Usage();
+	}
 }
 
 int main(int argc, char *argv[])
@@ -45,51 +71,56 @@ int main(int argc, char *argv[])
     progName = argv[0];
     /* It is easy to break this arguments source code.
      * Will fix it later. getopt?
+     * Update: I think I have kinda fixed it.
      *
      * TODO:
      * -v (verbose) should be off by default because printing to stdout slows down the program.
      *  Would fflushing(stdout) give the output some speed?
      */
-     /* TODO: Create list (array) of valid formats.*/
-    if (argc < 3)
+    if (argc < 2)
     {
+	Greeting();
         Usage();
     }
-
+    
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "-s") == 0 /*|| strcmp(argv[i], "--source=<source>") == 0*/)
+        if (strcasecmp(argv[i], "-s") == 0 || strcasecmp(argv[i], "--source") == 0)
         {
+	    sourceargc++;
             if ((i + 1) == argc)
             {
-                fprintf(stderr, "Enter source from which to recover files.\n");
+                fprintf(stderr, "Error: No source entered.\n\n");
                 Usage();
             }
             source = argv[i + 1];
             //  break;
         }
-
-        if (strcmp(argv[i], "-f") == 0)
+        
+	if (strcasecmp(argv[i], "-f") == 0 || strcasecmp(argv[i], "--file-format") == 0)
         {
+	    formatargc++;
             if ((i + 1) == argc)
             {
-                fprintf(stderr, "Enter file format.\n");
+                fprintf(stderr, "Error: No file format entered.\n\n");
                 Usage();
             }
             fileFormat = argv[i + 1];
+	    checkfileformat();
             //	break;
         }
     }
-    if (strlen(source) == 0)
+    if (sourceargc == 0)
     {
-        fprintf(stderr, "\nError: No source entered.\n");
+        fprintf(stderr, "\nError: No source entered.\n\n");
         Usage();
     }
-    if (strlen(fileFormat) == 0)
+    if (formatargc == 0)
     {
-        fprintf(stderr, "\nError: No file format entered.\n");
+        fprintf(stderr, "\nError: No file format entered.\n\n");
         Usage();
     }
+
     FILE *DeviceOrFile = fopen(source, "r");
     if (DeviceOrFile == NULL)
     {
@@ -145,7 +176,7 @@ void webp(FILE *DeviceOrFile)
         fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8) | riff[4];
 
         /* All the remaining lines have to be converted to a funtion
-         * since I use the same steps in the wave(..) function.
+         * since I use similar steps in the wave(..) function.
          */
         sprintf(destName, "Recovered ");
         sprintf(tempName, "%d", numFilesRecovered);
@@ -182,7 +213,7 @@ void webp(FILE *DeviceOrFile)
             {
                 carve = getc(DeviceOrFile); /* Buggy if carve is not updated.
 						     * Take this into consideration when creating a write
-						     * function for webp() and webp().
+						     * function for wave() and webp().
 						     * This is because of the while loops. wave() uses while(1).
 						     * Solution: wave() has to use while-loops similar to webp()'s.
 						     */
