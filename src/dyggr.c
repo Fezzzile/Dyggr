@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "dyggr.h"
 
 /* TODO: Formats to be added:
@@ -25,6 +26,7 @@
  */
 /* TODO: Add printing function which will be affected by the verbose/quiet flag,
  * because writing an if-statement before each print statement is naive.
+ * Update: Done-ish.
  */
 void Usage(void)
 {
@@ -56,6 +58,26 @@ void checkfileformat(void){
 		fprintf(stderr, "Error: Invalid file format.\n");
 		Usage();
 	}
+}
+
+/* This function prints only if verbose is true.
+ * It should be called by the scanning/carving functions,
+ * not by functions that check command-line args are valid.
+ *
+ * It is pretty primitive at the moment.
+ * I think there should be two verbose modes:
+ * one that suppresses only messages sent to stdout,
+ * and another that suppresses both stdout and stderr.
+ * We'll see.
+ */
+void if_verbose_print(FILE *stream, const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	if (verbose) {
+		vfprintf(stream, fmt, args);
+	}
+	va_end(args);
 }
 
 FILE *CommandLineArguments(int argc, char *argv[], FILE *DeviceOrFile)
@@ -141,7 +163,7 @@ void webp(FILE *DeviceOrFile)
 		while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0)) {
 			carve = getc(DeviceOrFile);
 			if (carve == EOF) {
-				fprintf(stdout, "End of %s reached.\n", source);
+				if_verbose_print(stdout, "End of %s reached.\n", source);
 				exit(EXIT_SUCCESS);
 			}
 			for (int b = 0; b < 11; b++) {
@@ -176,9 +198,7 @@ void webp(FILE *DeviceOrFile)
 			fwrite(buffer, 1, fileSize - 4, restoredfile);
 			carve = getc(DeviceOrFile); // Without updating, a whole lot of weirdness occurs.
 		} else {
-			if (verbose){
-				fprintf(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", fileSize - 4);
-			}
+			if_verbose_print(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", fileSize - 4);
 	    
 			for (int h = 0; h < fileSize - 4; h++)
 			{
@@ -194,17 +214,15 @@ void webp(FILE *DeviceOrFile)
 			}
 		}
 
-		if (verbose) {
-			if (fileSize < 1048576) {
-				fprintf(stdout, "Recovered %d KiB WebP file.\n", fileSize >> 10);
-			} else {
-				fprintf(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
-			}
+		if (fileSize < 1048576) {
+			if_verbose_print(stdout, "Recovered %d KiB WebP file.\n", fileSize >> 10);
+		} else {
+			if_verbose_print(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
 		}
 
 		fclose(restoredfile);
-		if (carve == EOF && verbose) {
-			fprintf(stdout, "Reached end of %s\n", source);
+		if (carve == EOF) {
+			if_verbose_print(stdout, "Reached end of %s\n", source);
 		}
 	}
 }
@@ -231,9 +249,7 @@ void wave(FILE *DeviceOrFile)
 		while(1) {
 			carve = getc(DeviceOrFile);
 			if (carve == EOF) {
-				if (verbose) {
-					fprintf(stdout, "End of %s reached.\n", source);
-				}
+				if_verbose_print(stdout, "End of %s reached.\n", source);
 				exit(EXIT_SUCCESS);
 			}
 			riff[11] = carve;
@@ -257,9 +273,7 @@ void wave(FILE *DeviceOrFile)
 				while(1) {
 					carve = getc(DeviceOrFile);
 					if (carve == EOF) {
-						if (verbose) {
-							fprintf(stdout, "End of %s reached.\n", source);
-						}
+						if_verbose_print(stdout, "End of %s reached.\n", source);
 						exit(EXIT_SUCCESS);
 					}
 					/* Keep writing bytes until the "data" chunk is reached */
@@ -294,17 +308,13 @@ void wave(FILE *DeviceOrFile)
 							fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
 							fwrite(buffer, 1, rawSizeInBytes, restoredfile);
 						} else {
-							if (verbose){
-								fprintf(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", rawSizeInBytes);
-							}
-							for(int h = 0; h < rawSizeInBytes; h++) {
+							if_verbose_print(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", rawSizeInBytes);
+							for (int h = 0; h < rawSizeInBytes; h++) {
 								putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
 							}
 						}
 						fclose(restoredfile);
-						if (verbose) {
-							fprintf(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
-						}
+						if_verbose_print(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
 						break; /* Break loop to avoid trailing bytes */
 					}
 					/* Search: shift array contents leftward

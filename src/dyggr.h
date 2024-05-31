@@ -1,4 +1,5 @@
 typedef uint8_t byte;
+void if_verbose_print(FILE *stream, const char *fmt, ...);
 void wave(FILE *);
 void webp(FILE *);
 char *source = "";
@@ -7,4 +8,4 @@ char *fileFormat = "";
 int sourceargc = 0; // Count instance of '-s'
 int formatargc = 0; // Count instance of '-f'
 char *validfileformats[] = {"wav", "webp"};
-int verbose = 1;
+int verbose = 1; // The default
