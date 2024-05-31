@@ -23,7 +23,9 @@
  * For example, if you append random bytes to a WAV file (`cat /dev/random >> song.wav` and ctrl+c immediately),
  * import the file to Audacity, if you export it to another WAV file the file size/length will be fixed.
  */
-
+/* TODO: Add printing function which will be affected by the verbose/quiet flag,
+ * because writing an if-statement before each print statement is naive.
+ */
 void Usage(void)
 {
 	fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
