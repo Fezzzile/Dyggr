@@ -76,7 +76,7 @@ void prynt(FILE *stream, const char *fmt, ...)
 	va_start(args, fmt);
 	
 	if (stream == stderr) {
-		printf(redtext);
+		printf("%s", redtext);
 		/* For some reason the text does not change to red 
 		 * if I do not print a newline.
 		 * And all subsequent prints (stderr and stdout) are affected.
@@ -84,7 +84,7 @@ void prynt(FILE *stream, const char *fmt, ...)
 		 */ 
 		puts(""); 
 	} else if (stream == stdout && file_found_greenify_text) {
-		printf(greentext);
+		printf("%s", greentext);
 	}
 
 	if (verbose) {
@@ -95,10 +95,8 @@ void prynt(FILE *stream, const char *fmt, ...)
 	va_end(args);
 	
 	/* Prepare (next) search; we don't know if we'll find a(nother) file*/
-	printf(resetcolour);
+	printf("%s", resetcolour);
 	file_found_greenify_text = 0;
-
-	/* Colour-handling code potentially insecure, according to Clang 14.0.6 */
 }
 
 void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
