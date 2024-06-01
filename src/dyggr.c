@@ -79,7 +79,7 @@ void prynt(FILE *stream, const char *fmt, ...)
 		printf(redtext);
 		/* For some reason the text does not change to red 
 		 * if I do not print a newline.
-		 * And all subsquent prints (stderr and stdout) are affected.
+		 * And all subsequent prints (stderr and stdout) are affected.
 		 * Consider this a feature, for now.
 		 */ 
 		puts(""); 
