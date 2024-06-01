@@ -29,15 +29,14 @@
  * because writing an if-statement before each print statement is naive.
  * Update: Done-ish.
  */
+int file_found_greenify_text = 0;
 void Usage(void)
 {
-	fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-	fprintf(stdout, "Usage: %s -f <file format> -s <source/device to scan>\n\n", progName);
+	fprintf(stdout, "\nUsage: %s -f <file format> -s <source/device to scan>\n\n", progName);
 	fprintf(stdout, "File formats: \n");
 	for (int i = 0; i < 2; i++) {
 		fprintf(stdout, "\t\t\"%s\"\n", validfileformats[i]);
 	}
-	fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -56,14 +55,14 @@ void checkfileformat(void){
 		}
 	}
 	if (!isvalid){
-		fprintf(stderr, "Error: Invalid file format.\n");
+		prynt(stderr, "Invalid file format.");
 		Usage();
 	}
 }
 
 /* This function prints only if verbose is true.
  * It should be called by the scanning/carving functions,
- * not by functions that check command-line args are valid.
+ * not by functions that check if command-line args are valid.
  *
  * It is pretty primitive at the moment.
  * I think there should be two verbose modes:
@@ -71,14 +70,35 @@ void checkfileformat(void){
  * and another that suppresses both stdout and stderr.
  * We'll see.
  */
-void if_verbose_print(FILE *stream, const char *fmt, ...)
+void prynt(FILE *stream, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
+	
+	if (stream == stderr) {
+		printf(redtext);
+		/* For some reason the text does not change to red 
+		 * if I do not print a newline.
+		 * And all subsquents prints (stderr and stdout) are affected.
+		 * Consider this a feature, for now.
+		 */ 
+		puts(""); 
+	} else if (stream == stdout && file_found_greenify_text) {
+		printf(greentext);
+	}
+
 	if (verbose) {
 		vfprintf(stream, fmt, args);
+		fprintf(stream, "\n");
 	}
+
 	va_end(args);
+	
+	/* Prepare (next) search; we don't know if we'll find a(nother) file*/
+	printf(resetcolour);
+	file_found_greenify_text = 0;
+
+	/* Colour-handling code potentially insecure, according to Clang 14.0.6 */
 }
 
 void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
@@ -88,6 +108,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 	* TODO:
 	* Add -v (verbose), or -q (quiet), in dyggr.h 
 	* Colorise (red) stderr messages
+	* Done-ish.
 	*/
         progName = argv[0];
 	if (argc < 2) {
@@ -99,7 +120,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 		if (strcasecmp(argv[i], "-s") == 0 || strcasecmp(argv[i], "--source") == 0) {
 			sourceargc++;
 			if ((i + 1) == argc) {
-				fprintf(stderr, "Error: No source entered.\n\n");
+				prynt(stderr, "No source entered.");
 				Usage();
 			}
 			source = argv[i + 1];
@@ -108,7 +129,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 		if (strcasecmp(argv[i], "-f") == 0 || strcasecmp(argv[i], "--file-format") == 0) {
 			formatargc++;
 			if ((i + 1) == argc) {
-				fprintf(stderr, "Error: No file format entered.\n\n");
+				prynt(stderr, "No file format entered.");
 				Usage();
 			}
 			fileFormat = argv[i + 1];
@@ -118,17 +139,17 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 	}
 	
 	if (sourceargc == 0) {
-		fprintf(stderr, "Error: No source entered.\n\n");
+		prynt(stderr, "No source entered.");
 		Usage();
 	}
 	if (formatargc == 0) {
-		fprintf(stderr, "Error: No file format entered.\n\n");
+		prynt(stderr, "No file format entered.");
 		Usage();
 	}
 	
 	*DeviceOrFile = fopen(source, "r");
 	if (*DeviceOrFile == NULL) {
-		fprintf(stderr, "Error: Could not open %s.\n", source);
+		prynt(stderr, "Could not open %s", source);
 		Usage();
 	}
 }
@@ -153,7 +174,6 @@ void webp(FILE *DeviceOrFile)
 	int carve = 0;
 	while (carve != EOF) {
 		byte riff[12];
-		char tempriff[12];
 		char cmpriff[] = "RIFF";
 		char cmpwebp[] = "WEBP";
 		uint32_t fileSize;
@@ -164,7 +184,7 @@ void webp(FILE *DeviceOrFile)
 		while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0)) {
 			carve = getc(DeviceOrFile);
 			if (carve == EOF) {
-				if_verbose_print(stdout, "End of %s reached.\n", source);
+				prynt(stdout, "End of %s reached.", source);
 				exit(EXIT_SUCCESS);
 			}
 			for (int b = 0; b < 11; b++) {
@@ -173,33 +193,39 @@ void webp(FILE *DeviceOrFile)
 			riff[11] = carve;
 		}
 
+		/* Used by the prynt function to make text green if a file was found */
+		file_found_greenify_text = 1;
 		numFilesRecovered++;
-		//fileSize = (((riff[7] << 24) | (riff[6] << 16)) | (riff[5] << 8)) | riff[4];
+
+		/* fileSize = (((riff[7] << 24) | (riff[6] << 16)) | (riff[5] << 8)) | riff[4]; */
 		fileSize = (((((riff[7] << 8) | riff[6]) << 8) | riff[5]) << 8) | riff[4];
 		
 		/* All the remaining lines have to be converted to a funtion
 		 * since I use similar steps in the wave(..) function.
-		 * */
+		 */
 		sprintf(destName, "Recovered ");
 		sprintf(tempName, "%d", numFilesRecovered);
 		strcat(destName, tempName);
 		strcat(destName, ".webp");
+
 		/* Write to the new file */
 		FILE *restoredfile = fopen(destName, "ab");
 		/* Write "RIFFfileSizeWEBP" first */
 		for (int v = 0; v < 12; v++) {
 			fprintf(restoredfile, "%c", riff[v]);
 		}
-		/* Minus 4 because the four bytes "WEBP", which are included in the fileSize,
+		/* Create buffer.
+		 * Minus 4 because the four bytes "WEBP", which are included in the fileSize,
 		 * have already been written to the file as part of the RIFF header.
 		 */
 	       	uint8_t *buffer = (uint8_t *) malloc(fileSize - 4);
 		if (buffer != NULL) {
 			fread(buffer, 1, fileSize - 4, DeviceOrFile);
 			fwrite(buffer, 1, fileSize - 4, restoredfile);
-			carve = getc(DeviceOrFile); // Without updating, a whole lot of weirdness occurs.
+			/* A whole lot of weirdness occurs if carve is not updated */
+			carve = getc(DeviceOrFile); 
 		} else {
-			if_verbose_print(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", fileSize - 4);
+			prynt(stderr, "%sFailed to create %d-byte buffer in memory. Writing one byte a time...%s", redtext, fileSize - 4, resetcolour);
 	    
 			for (int h = 0; h < fileSize - 4; h++)
 			{
@@ -216,14 +242,14 @@ void webp(FILE *DeviceOrFile)
 		}
 
 		if (fileSize < 1048576) {
-			if_verbose_print(stdout, "Recovered %d KiB WebP file.\n", fileSize >> 10);
+			prynt(stdout, "%sRecovered %d KiB WebP file.", greentext, fileSize >> 10 /* / 1024 */, resetcolour);
 		} else {
-			if_verbose_print(stdout, "Recovered %d MiB WebP file.\n", fileSize >> 20 /* / 1024^2 */);
+			prynt(stdout, "Recovered %d MiB WebP file.", fileSize >> 20 /* / 1024^2 */);
 		}
 
 		fclose(restoredfile);
 		if (carve == EOF) {
-			if_verbose_print(stdout, "Reached end of %s\n", source);
+			prynt(stdout, "Reached end of %s", source);
 		}
 	}
 }
@@ -235,7 +261,6 @@ void wave(FILE *DeviceOrFile)
 	while (carve != EOF) {
 		/*These have to be moved to dyggr.h*/
 		uint8_t riff[12];
-		char tempriff[12];
 		char cmpriff[] = "RIFF";
 		char cmpwave[] = "WAVE";
 		char cmpdata[] = "data";
@@ -250,11 +275,12 @@ void wave(FILE *DeviceOrFile)
 		while(1) {
 			carve = getc(DeviceOrFile);
 			if (carve == EOF) {
-				if_verbose_print(stdout, "End of %s reached.\n", source);
+				prynt(stdout, "End of %s reached.", source);
 				exit(EXIT_SUCCESS);
 			}
 			riff[11] = carve;
 			if (memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwave, 4) == 0)  /* WAVE header found. */ {
+				file_found_greenify_text = 1;
 				/* TODO: Avoid appending bytes to an existing file
 				 * if user runs the program multiple times.
 				 */
@@ -274,7 +300,7 @@ void wave(FILE *DeviceOrFile)
 				while(1) {
 					carve = getc(DeviceOrFile);
 					if (carve == EOF) {
-						if_verbose_print(stdout, "End of %s reached.\n", source);
+						prynt(stdout, "End of %s reached.", source);
 						exit(EXIT_SUCCESS);
 					}
 					/* Keep writing bytes until the "data" chunk is reached */
@@ -303,19 +329,20 @@ void wave(FILE *DeviceOrFile)
 						 * that appends the raw PCM data to restoredfile.
 						 */
 						
-						/* Potentially use 4 GiB (minus header size) of memory*/
+						/* Potentially use 4 GiB (minus header size) of memory */
 						uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
 						if (buffer != NULL) {
 							fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
 							fwrite(buffer, 1, rawSizeInBytes, restoredfile);
 						} else {
-							if_verbose_print(stderr, "Failed to create %d-byte buffer in memory.\nWriting one byte a time.", rawSizeInBytes);
+							prynt(stderr, "Failed to create %d-byte buffer in memory. Writing one byte a time...", rawSizeInBytes);
 							for (int h = 0; h < rawSizeInBytes; h++) {
-								putc(getc(DeviceOrFile), restoredfile); // Append the raw audio data
+								/* Append the raw audio data, one byte each time we loop */
+								putc(getc(DeviceOrFile), restoredfile);
 							}
 						}
 						fclose(restoredfile);
-						if_verbose_print(stdout, "%d MiB WAVE file recovered.\n", rawSizeInBytes >> 20); /* /1024^2 */
+						prynt(stdout, "%d MiB WAVE file recovered.", rawSizeInBytes >> 20); /* /1024^2 */
 						break; /* Break loop to avoid trailing bytes */
 					}
 					/* Search: shift array contents leftward
