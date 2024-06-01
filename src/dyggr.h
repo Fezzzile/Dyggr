@@ -14,3 +14,4 @@ int verbose = 1; // The default
 char *redtext = "\033[31m";
 char *greentext = "\033[32m";
 char *resetcolour = "\033[0m";
+int file_found_greenify_text = 0;

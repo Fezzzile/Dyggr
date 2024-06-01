@@ -29,7 +29,6 @@
  * because writing an if-statement before each print statement is naive.
  * Update: Done-ish.
  */
-int file_found_greenify_text = 0;
 void Usage(void)
 {
 	fprintf(stdout, "\nUsage: %s -f <file format> -s <source/device to scan>\n\n", progName);
