@@ -81,7 +81,7 @@ void if_verbose_print(FILE *stream, const char *fmt, ...)
 	va_end(args);
 }
 
-FILE *CommandLineArguments(int argc, char *argv[], FILE *DeviceOrFile)
+void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 {
        /* It works, but getopt is better.
 	*
@@ -126,17 +126,17 @@ FILE *CommandLineArguments(int argc, char *argv[], FILE *DeviceOrFile)
 		Usage();
 	}
 	
-	DeviceOrFile = fopen(source, "r");
-	if (DeviceOrFile == NULL) {
+	*DeviceOrFile = fopen(source, "r");
+	if (*DeviceOrFile == NULL) {
 		fprintf(stderr, "Error: Could not open %s.\n", source);
 		Usage();
 	}
-	return DeviceOrFile;
 }
 
 int main(int argc, char *argv[])
 {
-	FILE *DeviceOrFile = CommandLineArguments(argc, argv, DeviceOrFile);
+	FILE *DeviceOrFile;
+	CommandLineArguments(argc, argv, &DeviceOrFile);
 	if (strcasecmp(fileFormat, "wav") == 0 || strcasecmp(fileFormat, "wave") == 0) {
 		wave(DeviceOrFile);
 	}
