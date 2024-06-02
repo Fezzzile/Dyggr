@@ -8,10 +8,13 @@ char *fileFormat = "";
 int sourceargc = 0; // Count instance of '-s'
 int formatargc = 0; // Count instance of '-f'
 char *validfileformats[] = {"wav", "webp"};
-int verbose = 1; // The default
+int progress_should_be_printed = 1; // The default
+int error_messages_should_be_ignored = 0;
 
 /*Coloured text*/
+int text_should_be_coloured = 0;
 char *redtext = "\033[31m";
 char *greentext = "\033[32m";
 char *resetcolour = "\033[0m";
 int file_found_greenify_text = 0;
+

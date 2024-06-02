@@ -36,6 +36,12 @@ void Usage(void)
 	for (int i = 0; i < 2; i++) {
 		fprintf(stdout, "\t\t\"%s\"\n", validfileformats[i]);
 	}
+
+	fprintf(stdout, "Options: \n");
+	fprintf(stdout, "\t\t-c, --color, --colour\n\t\t\tAdd chroma to messages.\n\n");
+	fprintf(stdout, "\t\t-q, --quiet\n\t\t\tIgnore non-critical messages.\n\n");
+	fprintf(stdout, "\t\t--ignore-errors\n\t\t\tIgnore error messages.\n\n");
+	
 	exit(EXIT_FAILURE);
 }
 
@@ -73,22 +79,31 @@ void prynt(FILE *stream, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	
-	if (stream == stderr) {
-		printf("%s", redtext);
-		/* For some reason the text does not change to red 
-		 * if I do not print a newline.
-		 * And all subsequent prints (stderr and stdout) are affected.
-		 * Consider this a feature, for now.
-		 */ 
-		puts(""); 
-	} else if (stream == stdout && file_found_greenify_text) {
-		printf("%s", greentext);
+	if (text_should_be_coloured) {	
+		if (stream == stderr) {
+			printf("%s", redtext);
+			/* For some reason the text does not change to red 
+			 * if I do not print a newline.
+			 * And all subsequent prints (stderr and stdout) are affected.
+			 * Consider this a feature, for now.
+			 */ 
+			puts(""); 
+		} else if (stream == stdout && file_found_greenify_text) {
+			printf("%s", greentext);
+		}
 	}
-
-	if (verbose) {
-		vfprintf(stream, fmt, args);
-		fprintf(stream, "\n");
+	/* Add goto print? */
+	if (stream == stderr) {
+		if (!error_messages_should_be_ignored) {
+			vfprintf(stream, fmt, args);
+			fprintf(stream, "\n");
+		}
+	} else {
+		/* stream is stdout */
+		if (progress_should_be_printed) {
+			vfprintf(stream, fmt, args);
+			fprintf(stream, "\n");
+		}
 	}
 
 	va_end(args);
@@ -100,12 +115,7 @@ void prynt(FILE *stream, const char *fmt, ...)
 
 void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 {
-       /* It works, but getopt is better.
-	*
-	* TODO:
-	* Add -v (verbose), or -q (quiet), in dyggr.h 
-	* Colorise (red) stderr messages
-	* Done-ish.
+       /* TODO: Improve code by using getopt 
 	*/
         progName = argv[0];
 	if (argc < 2) {
@@ -121,7 +131,6 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 				Usage();
 			}
 			source = argv[i + 1];
-			//  break;
 		}
 		if (strcasecmp(argv[i], "-f") == 0 || strcasecmp(argv[i], "--file-format") == 0) {
 			formatargc++;
@@ -131,7 +140,15 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 			}
 			fileFormat = argv[i + 1];
 			checkfileformat();
-			// break;
+		}
+		if (strcasecmp(argv[i], "-c") == 0 || strcasecmp(argv[i], "--colour") == 0 || strcasecmp(argv[i], "--color") == 0) {
+			text_should_be_coloured = 1;
+		}
+		if (strcasecmp(argv[i], "--ignore-errors") == 0) {
+			error_messages_should_be_ignored = 1;
+		}
+		if (strcasecmp(argv[i], "-q") == 0 || strcasecmp(argv[i], "--quiet") == 0) {
+			progress_should_be_printed = 0;
 		}
 	}
 	
@@ -146,7 +163,13 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 	
 	*DeviceOrFile = fopen(source, "r");
 	if (*DeviceOrFile == NULL) {
-		prynt(stderr, "Could not open %s", source);
+		/* TODO: #include <errno.h>
+		 * Read errno so as to give the user
+		 * a more-informative error message
+		 * as to why the source could not be opened.
+		 * File does not exist? Permission? etc.
+		 */
+		prynt(stderr, "Could not open %s.", source);
 		Usage();
 	}
 }
