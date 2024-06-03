@@ -56,7 +56,8 @@ void checkfileformat(void){
 	int isvalid = 0;
 	for (int i = 0; i < 2; i++) {
 		if (strcasecmp(fileFormat, validfileformats[i]) == 0) {
-			isvalid = 1;	
+			isvalid = 1;
+			break;
 		}
 	}
 	if (!isvalid){
