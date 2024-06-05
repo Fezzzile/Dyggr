@@ -246,7 +246,7 @@ void webp(FILE *DeviceOrFile)
 			/* A whole lot of weirdness occurs if carve is not updated */
 			carve = getc(DeviceOrFile); 
 		} else {
-			prynt(stderr, "%sFailed to create %d-byte buffer in memory. Writing one byte a time...%s", redtext, fileSize - 4, resetcolour);
+			prynt(stderr, "Failed to create %d-byte buffer in memory. Writing one byte at a time...", fileSize - 4);
 	    
 			for (int h = 0; h < fileSize - 4; h++)
 			{
@@ -356,7 +356,7 @@ void wave(FILE *DeviceOrFile)
 							fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
 							fwrite(buffer, 1, rawSizeInBytes, restoredfile);
 						} else {
-							prynt(stderr, "Failed to create %d-byte buffer in memory. Writing one byte a time...", rawSizeInBytes);
+							prynt(stderr, "Failed to create %d-byte buffer in memory. Writing one byte at time...", rawSizeInBytes);
 							for (int h = 0; h < rawSizeInBytes; h++) {
 								/* Append the raw audio data, one byte each time we loop */
 								putc(getc(DeviceOrFile), restoredfile);
