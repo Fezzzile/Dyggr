@@ -251,7 +251,7 @@ void webp(FILE *DeviceOrFile)
 			for (int h = 0; h < fileSize - 4; h++)
 			{
 				/* Buggy if carve is not updated.
-				 * I mast take this into consideration when creating a write
+				 * I must take this into consideration when creating a write
 				 * function for wave() and webp().
 				 * This is because of the while loops. wave() uses while(1).
 				 * Solution: wave() has to use while-loops similar to webp()'s.
