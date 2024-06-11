@@ -5,8 +5,6 @@ void webp(FILE *);
 char *source = "";
 char *progName;
 char *fileFormat = "";
-int sourceargc = 0; // Count instance of '-s'
-int formatargc = 0; // Count instance of '-f'
 char *validfileformats[] = {"wav", "webp"};
 int progress_should_be_printed = 1; // The default
 int error_messages_should_be_ignored = 0;

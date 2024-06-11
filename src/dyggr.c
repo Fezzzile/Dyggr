@@ -4,7 +4,9 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <getopt.h>
 #include "dyggr.h"
+#include <errno.h> /*<-TODO*/
 
 /* TODO: Formats to be added:
  * DNG (Losing the hundreds of raw images I took with smartphones would depress me.)
@@ -25,20 +27,16 @@
  * For example, if you append random bytes to a WAV file (`cat /dev/random >> song.wav` and ctrl+c immediately),
  * import the file to Audacity, if you export it to another WAV file the file size/length will be fixed.
  */
-/* TODO: Add printing function which will be affected by the verbose/quiet flag,
- * because writing an if-statement before each print statement is naive.
- * Update: Done-ish.
- */
 void Usage(void)
 {
-	fprintf(stdout, "\nUsage: %s -f <file format> -s <source/device to scan>\n\n", progName);
+	fprintf(stdout, "\nUsage: %s [option]... <file format> <device to scan>\n\n", progName);
 	fprintf(stdout, "File formats: \n");
 	for (int i = 0; i < 2; i++) {
 		fprintf(stdout, "\t\t\"%s\"\n", validfileformats[i]);
 	}
 
 	fprintf(stdout, "Options: \n");
-	fprintf(stdout, "\t\t-c, --color, --colour\n\t\t\tAdd chroma to messages.\n\n");
+	fprintf(stdout, "\t\t-c, --colour\n\t\t\tAdd colour to messages.\n\n");
 	fprintf(stdout, "\t\t-q, --quiet\n\t\t\tIgnore non-critical messages.\n\n");
 	fprintf(stdout, "\t\t--ignore-errors\n\t\t\tIgnore error messages.\n\n");
 	
@@ -69,12 +67,6 @@ void checkfileformat(void){
 /* This function prints only if verbose is true.
  * It should be called by the scanning/carving functions,
  * not by functions that check if command-line args are valid.
- *
- * It is pretty primitive at the moment.
- * I think there should be two verbose modes:
- * one that suppresses only messages sent to stdout,
- * and another that suppresses both stdout and stderr.
- * We'll see.
  */
 void prynt(FILE *stream, const char *fmt, ...)
 {
@@ -116,51 +108,56 @@ void prynt(FILE *stream, const char *fmt, ...)
 
 void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 {
-       /* TODO: Improve code by using getopt 
-	*/
         progName = argv[0];
-	if (argc < 2) {
+	char *short_options = "ciq";
+	const struct option long_options[] = {
+		{"colour", no_argument, NULL, 'c'},
+		{"ignore-errors", no_argument, NULL, 'i'},
+		{"quiet", no_argument, NULL, 'q'},
+		{0, 0, 0, 0}
+	};
+	/*TODO: Add some way to test if the libc in the system supports getopt_long,
+	 * since getopt_long since a GNU extension.
+	 * If it does not support _long, use the short-option-only version,
+	 * which is typically how macOS and the BSDs work.
+	 */
+	int next_option;
+	for (; ;) {
+		next_option = getopt_long (argc, argv, short_options, long_options, NULL);
+		if (next_option == -1) {
+			break;
+		}
+
+		switch(next_option) {
+			case 'c':
+				text_should_be_coloured = 1;
+				break;
+			case 'i':
+				error_messages_should_be_ignored = 1;
+				break;
+			case 'q':
+				progress_should_be_printed = 0;
+				break;
+			default:
+				Usage();
+		}
+	}
+	if (argc - optind < 2) {
 		Greeting();
 		Usage();
 	}
-	
-	for (int i = 1; i < argc; i++) {
-		if (strcasecmp(argv[i], "-s") == 0 || strcasecmp(argv[i], "--source") == 0) {
-			sourceargc++;
-			if ((i + 1) == argc) {
-				prynt(stderr, "No source entered.");
-				Usage();
-			}
-			source = argv[i + 1];
+
+	int required_arguments = 2;
+	if (optind < argc) {
+		if (argc - optind > 2) {
+			prynt(stderr, "Too many arguments.");
+			Usage();
 		}
-		if (strcasecmp(argv[i], "-f") == 0 || strcasecmp(argv[i], "--file-format") == 0) {
-			formatargc++;
-			if ((i + 1) == argc) {
-				prynt(stderr, "No file format entered.");
-				Usage();
-			}
-			fileFormat = argv[i + 1];
-			checkfileformat();
-		}
-		if (strcasecmp(argv[i], "-c") == 0 || strcasecmp(argv[i], "--colour") == 0 || strcasecmp(argv[i], "--color") == 0) {
-			text_should_be_coloured = 1;
-		}
-		if (strcasecmp(argv[i], "--ignore-errors") == 0) {
-			error_messages_should_be_ignored = 1;
-		}
-		if (strcasecmp(argv[i], "-q") == 0 || strcasecmp(argv[i], "--quiet") == 0) {
-			progress_should_be_printed = 0;
-		}
+		fileFormat = argv[optind++];
+		source = argv[optind];
 	}
 	
-	if (sourceargc == 0) {
-		prynt(stderr, "No source entered.");
-		Usage();
-	}
-	if (formatargc == 0) {
-		prynt(stderr, "No file format entered.");
-		Usage();
-	}
+	checkfileformat();
 	
 	*DeviceOrFile = fopen(source, "r");
 	if (*DeviceOrFile == NULL) {
@@ -351,6 +348,9 @@ void wave(FILE *DeviceOrFile)
 						 */
 						
 						/* Potentially use 4 GiB (minus header size) of memory */
+						/*TODO: Instead of wasting memory, test reading in blocks
+						 * of powers of 2, which is how most file systems work, right?
+						 */
 						uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
 						if (buffer != NULL) {
 							fread(buffer, 1, rawSizeInBytes, DeviceOrFile);
