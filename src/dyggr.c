@@ -221,6 +221,10 @@ int main(int argc, char *argv[])
 
 void webp(FILE *DeviceOrFile)
 {
+	/*TODO: FIX: I introduced a bug here, probably after moving
+	 * "End of source reached" to main. The looping does
+	 * not stop on some files.
+	 */
 	int numFilesRecovered = 0;
 	int carve = 0;
 	byte riff[12];
