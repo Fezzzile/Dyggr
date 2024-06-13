@@ -18,3 +18,7 @@ int file_found_greenify_text = 0;
 
 char destName[100];
 char *output_prefix = "recovered ";
+
+/*Currently not used*/
+int blocksize = 512;
+int magicsize;

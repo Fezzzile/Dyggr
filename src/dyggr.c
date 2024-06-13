@@ -23,7 +23,7 @@
 /* TODO: Read in blocks (The current method, no blocks, is slow) 
  * Only scan n bytes in the beginning of the block,
  * where n is the length of the magic number.
- * If not found, add 'blocksize - n' to lseek() or equivalent
+ * If not found, add 'blocksize - n' to fseek() or equivalent
  * and search again.*/
 
 /* TODO: Features I hope to add in the last stages:
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 	if (strcasecmp(fileFormat, "webp") == 0) {
 		webp(DeviceOrFile);
 	}
-	
+	prynt(stdout, "End of %s reached.", source);
 	return EXIT_SUCCESS;
 }
 
@@ -223,24 +223,21 @@ void webp(FILE *DeviceOrFile)
 {
 	int numFilesRecovered = 0;
 	int carve = 0;
-	while (carve != EOF) {
-		byte riff[12];
-		char cmpriff[] = "RIFF";
-		char cmpwebp[] = "WEBP";
-		uint32_t fileSize;
-		char tempName[1000]; /*"Used to catenate numFilesRecovered to "Recovered"*/
+	byte riff[12];
+	char cmpriff[] = "RIFF";
+	char cmpwebp[] = "WEBP";
+	uint32_t fileSize;
+	char tempName[1000]; /*"Used to catenate numFilesRecovered to "Recovered"*/
+	
+	while ((carve = getc(DeviceOrFile)) != EOF) {	
 		sprintf(destName, "%d", numFilesRecovered);
 		riff[11] = carve;
 		while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0)) {
-			carve = getc(DeviceOrFile);
-			if (carve == EOF) {
-				prynt(stdout, "End of %s reached.", source);
-				exit(EXIT_SUCCESS);
-			}
+			/* Shift array content leftward */
 			for (int b = 0; b < 11; b++) {
 				riff[b] = riff[b + 1];
 			}
-			riff[11] = carve;
+			riff[11] = getc(DeviceOrFile);
 		}
 
 		/* Used by the prynt function to make text green if a file was found */
@@ -273,7 +270,7 @@ void webp(FILE *DeviceOrFile)
 			fread(buffer, 1, fileSize - 4, DeviceOrFile);
 			fwrite(buffer, 1, fileSize - 4, restoredfile);
 			/* A whole lot of weirdness occurs if carve is not updated */
-			carve = getc(DeviceOrFile); 
+			//carve = getc(DeviceOrFile); 
 		} else {
 			prynt(stderr, "Failed to create %d-byte buffer in memory. Writing one byte at a time...", fileSize - 4);
 	    
@@ -285,9 +282,10 @@ void webp(FILE *DeviceOrFile)
 				 * This is because of the while loops. wave() uses while(1).
 				 * Solution: wave() has to use while-loops similar to webp()'s.
 				 */
-				carve = getc(DeviceOrFile);
+				//carve = getc(DeviceOrFile);
 				/* Append the raw audio data */
-				putc(carve, restoredfile); 
+				//putc(carve, restoredfile); 
+				putc(getc(DeviceOrFile), restoredfile);
 			}
 		}
 
@@ -298,9 +296,6 @@ void webp(FILE *DeviceOrFile)
 		}
 
 		fclose(restoredfile);
-		if (carve == EOF) {
-			prynt(stdout, "Reached end of %s", source);
-		}
 	}
 }
 
@@ -409,6 +404,7 @@ void wave(FILE *DeviceOrFile)
 			for (int b = 0; b < 11; b++) {
 				riff[b] = riff[b + 1];
 			}
+
 		}
 	}
 }
