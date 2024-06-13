@@ -20,7 +20,11 @@
  * TIFF (DNG uses the TIFF container, so I should study the latter before progressing to the former.)
  * WavPack (FLAC does not support DSD and float32 PCM, so WavPack is essential (for archiving and processing; no benefit whatsoever to the human ear.))
  */
-/* TODO: Read in blocks (The current method, no blocks, is slow) */
+/* TODO: Read in blocks (The current method, no blocks, is slow) 
+ * Only scan n bytes in the beginning of the block,
+ * where n is the length of the magic number.
+ * If not found, add 'blocksize - n' to lseek() or equivalent
+ * and search again.*/
 
 /* TODO: Features I hope to add in the last stages:
  * Concurrency/threads.
