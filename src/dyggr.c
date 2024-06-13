@@ -182,7 +182,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 
 	int required_arguments = 2;
 	if (optind < argc) {
-		if (argc - optind > 2) {
+		if ((argc - optind) > required_arguments) {
 			prynt(stderr, "Too many arguments.");
 			Usage();
 		}
