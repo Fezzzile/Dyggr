@@ -221,10 +221,6 @@ int main(int argc, char *argv[])
 
 void webp(FILE *DeviceOrFile)
 {
-	/*TODO: FIX: I introduced a bug here, probably after moving
-	 * "End of source reached" to main. The looping does
-	 * not stop on some files.
-	 */
 	int numFilesRecovered = 0;
 	int carve = 0;
 	byte riff[12];
@@ -237,11 +233,15 @@ void webp(FILE *DeviceOrFile)
 		sprintf(destName, "%d", numFilesRecovered);
 		riff[11] = carve;
 		while (!(memcmp(riff, cmpriff, 4) == 0 && memcmp(&riff[8], cmpwebp, 4) == 0)) {
+			carve = getc(DeviceOrFile);
+			if (carve == EOF)
+				return; /* to main */
+
 			/* Shift array content leftward */
 			for (int b = 0; b < 11; b++) {
 				riff[b] = riff[b + 1];
 			}
-			riff[11] = getc(DeviceOrFile);
+			riff[11] = carve;
 		}
 
 		/* Used by the prynt function to make text green if a file was found */
@@ -286,10 +286,10 @@ void webp(FILE *DeviceOrFile)
 				 * This is because of the while loops. wave() uses while(1).
 				 * Solution: wave() has to use while-loops similar to webp()'s.
 				 */
-				//carve = getc(DeviceOrFile);
+				carve = getc(DeviceOrFile);
 				/* Append the raw audio data */
-				//putc(carve, restoredfile); 
-				putc(getc(DeviceOrFile), restoredfile);
+				putc(carve, restoredfile); 
+				//putc(getc(DeviceOrFile), restoredfile);
 			}
 		}
 
@@ -408,7 +408,6 @@ void wave(FILE *DeviceOrFile)
 			for (int b = 0; b < 11; b++) {
 				riff[b] = riff[b + 1];
 			}
-
 		}
 	}
 }
