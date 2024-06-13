@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include "dyggr.h"
 #include <errno.h> /*<-TODO*/
+#include "license.h"
 
 /* TODO: Formats to be added:
  * DNG (Losing the hundreds of raw images I took with smartphones would depress me.)
@@ -19,6 +20,7 @@
  * TIFF (DNG uses the TIFF container, so I should study the latter before progressing to the former.)
  * WavPack (FLAC does not support DSD and float32 PCM, so WavPack is essential (for archiving and processing; no benefit whatsoever to the human ear.))
  */
+/* TODO: Read in blocks (The current method, no blocks, is slow) */
 
 /* TODO: Features I hope to add in the last stages:
  * Concurrency/threads.
@@ -30,15 +32,20 @@
 void Usage(void)
 {
 	fprintf(stdout, "\nUsage: %s [option]... <file format> <device to scan>\n\n", progName);
-	fprintf(stdout, "File formats: \n");
-	for (int i = 0; i < 2; i++) {
-		fprintf(stdout, "\t\t\"%s\"\n", validfileformats[i]);
-	}
+	fputs( 
+	"File formats: \n\
+	wav         Audio file format (typically uncompressed LPCM).\n\
+	webp        Image file format with lossy and lossless compression.\n"
+	, stdout);
 
-	fprintf(stdout, "Options: \n");
-	fprintf(stdout, "\t\t-c, --colour\n\t\t\tAdd colour to messages.\n\n");
-	fprintf(stdout, "\t\t-q, --quiet\n\t\t\tIgnore non-critical messages.\n\n");
-	fprintf(stdout, "\t\t--ignore-errors\n\t\t\tIgnore error messages.\n\n");
+	fputs(
+	"Options:\n\
+	-c, --colour                 Add colour to messages.\n\
+	-q, --quiet                  Ignore non-critical messages.\n\
+	-i, --ignore-errors          Ignore error messages.\n\
+	-o, --output-prefix=<prefix> The prefix of the recovered file's filename.\n\
+	-l, --license                Print full license (terms and conditions).\n",
+	stdout);
 	
 	exit(EXIT_FAILURE);
 }
@@ -46,11 +53,25 @@ void Usage(void)
 void Greeting(void)
 {
 	fprintf(stdout, "\nDyggr: recover deleted files.\n\n");
-	fprintf(stdout, "Copyright (c) 2024 Fezile Nkuna.\n\n");
-	fprintf(stdout, "Dyggr is distributed under the terms of the Apache 2.0 license.\n\n");
+	fputs(
+"Copyright 2024 Fezile Nkuna\n\
+\n\
+Licensed under the Apache License, Version 2.0 (the \"License\");\n\
+you may not use this file except in compliance with the License.\n\
+You may obtain a copy of the License at\n\
+\n\
+\thttp://www.apache.org/licenses/LICENSE-2.0\n\
+\n\
+Unless required by applicable law or agreed to in writing, software\n\
+distributed under the License is distributed on an \"AS IS\" BASIS,\n\
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n\
+See the License for the specific language governing permissions and\n\
+limitations under the License.\n"
+ , stdout);
 }
 
-void checkfileformat(void){
+void checkfileformat(void)
+{
 	int isvalid = 0;
 	for (int i = 0; i < 2; i++) {
 		if (strcasecmp(fileFormat, validfileformats[i]) == 0) {
@@ -58,7 +79,7 @@ void checkfileformat(void){
 			break;
 		}
 	}
-	if (!isvalid){
+	if (!isvalid) {
 		prynt(stderr, "Invalid file format.");
 		Usage();
 	}
@@ -109,11 +130,13 @@ void prynt(FILE *stream, const char *fmt, ...)
 void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 {
         progName = argv[0];
-	char *short_options = "ciq";
+	char *short_options = "ciqo:l";
 	const struct option long_options[] = {
 		{"colour", no_argument, NULL, 'c'},
 		{"ignore-errors", no_argument, NULL, 'i'},
 		{"quiet", no_argument, NULL, 'q'},
+		{"output-prefix", required_argument, NULL, 'o'},
+		{"license", no_argument, NULL, 'l'},
 		{0, 0, 0, 0}
 	};
 	/*TODO: Add some way to test if the libc in the system supports getopt_long,
@@ -137,6 +160,12 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 				break;
 			case 'q':
 				progress_should_be_printed = 0;
+				break;
+			case 'o':
+				output_prefix = optarg;
+				break;
+			case 'l':
+				fputs(apache2, stdout);
 				break;
 			default:
 				Usage();
@@ -195,7 +224,6 @@ void webp(FILE *DeviceOrFile)
 		char cmpriff[] = "RIFF";
 		char cmpwebp[] = "WEBP";
 		uint32_t fileSize;
-		char destName[100]; //"Recovered";
 		char tempName[1000]; /*"Used to catenate numFilesRecovered to "Recovered"*/
 		sprintf(destName, "%d", numFilesRecovered);
 		riff[11] = carve;
@@ -221,7 +249,7 @@ void webp(FILE *DeviceOrFile)
 		/* All the remaining lines have to be converted to a funtion
 		 * since I use similar steps in the wave(..) function.
 		 */
-		sprintf(destName, "Recovered ");
+		sprintf(destName, output_prefix);
 		sprintf(tempName, "%d", numFilesRecovered);
 		strcat(destName, tempName);
 		strcat(destName, ".webp");
@@ -286,7 +314,6 @@ void wave(FILE *DeviceOrFile)
 		uint32_t rawSizeInBytes;
 	
 		/* Arbitrary array size for now */
-		char destName[100]; //"Recovered";
 		char tempName[1000]; // Used to concatenate "Recovered" and numFilesRecovered
 		sprintf(destName, "%d", numFilesRecovered);
 		
@@ -304,7 +331,7 @@ void wave(FILE *DeviceOrFile)
 				 */
 				/* Update restoredfile name here */
 				numFilesRecovered++;
-				sprintf(destName, "Recovered ");
+				sprintf(destName, output_prefix);
 				sprintf(tempName, "%d", numFilesRecovered);
 				strcat(destName, tempName);
 				strcat(destName, ".wav");

@@ -16,3 +16,5 @@ char *greentext = "\033[32m";
 char *resetcolour = "\033[0m";
 int file_found_greenify_text = 0;
 
+char destName[100];
+char *output_prefix = "recovered ";
