@@ -380,6 +380,7 @@ void wave(FILE *DeviceOrFile)
 						/* Potentially use 4 GiB (minus header size) of memory */
 						/*TODO: Instead of wasting memory, test reading in blocks
 						 * of powers of 2, which is how most file systems work, right?
+						 * TODO: or maybe use mmap, which won't load the file into memory.
 						 */
 						uint8_t *buffer = (uint8_t *) malloc(rawSizeInBytes);
 						if (buffer != NULL) {
