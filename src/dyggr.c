@@ -47,8 +47,8 @@ void Usage(void)
 	-c, --colour                 Add colour to messages.\n\
 	-q, --quiet                  Ignore non-critical messages.\n\
 	-i, --ignore-errors          Ignore error messages.\n\
-	-o, --output-prefix=<prefix> The prefix of the recovered file's filename.\n\
-	-l, --license                Print full license (terms and conditions).\n",
+	-o, --output-prefix <prefix> The prefix of the recovered file's filename.\n\
+	-l, --licensing              Print usage terms and conditions.\n",
 	stdout);
 	
 	exit(EXIT_FAILURE);
@@ -140,7 +140,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 		{"ignore-errors", no_argument, NULL, 'i'},
 		{"quiet", no_argument, NULL, 'q'},
 		{"output-prefix", required_argument, NULL, 'o'},
-		{"license", no_argument, NULL, 'l'},
+		{"licensing", no_argument, NULL, 'l'},
 		{0, 0, 0, 0}
 	};
 	/*TODO: Add some way to test if the libc in the system supports getopt_long,
