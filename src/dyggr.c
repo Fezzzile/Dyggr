@@ -144,7 +144,7 @@ void CommandLineArguments(int argc, char *argv[], FILE **DeviceOrFile)
 		{0, 0, 0, 0}
 	};
 	/*TODO: Add some way to test if the libc in the system supports getopt_long,
-	 * since getopt_long since a GNU extension.
+	 * since getopt_long is a GNU extension.
 	 * If it does not support _long, use the short-option-only version,
 	 * which is typically how macOS and the BSDs work.
 	 */
